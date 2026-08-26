@@ -1,0 +1,65 @@
+package com.log.diverr.diver.users.domain;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "users")
+public class UserModel {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        private String nomeCompleto;
+
+        @Column(unique = true, nullable = false)
+        private String email;
+
+        private String telefone;
+
+        @JsonIgnore
+        private String senha;
+        private LocalDate dataNascimento;
+        private boolean verificado;
+        private boolean aceitouTermosUso;
+        private boolean aceitouPoliticaPrivacidade;
+
+        @Enumerated(EnumType.STRING)
+        private UserStatus status;
+        @Enumerated(EnumType.STRING)
+        private Plano plano;
+
+        @Column(name = "plan_expires_at")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+        private LocalDate planExpiresAt;
+
+
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+
+        private String resetPasswordToken;
+        private LocalDateTime resetPasswordTokenExpiresAt;
+
+        public enum Plano {
+            FREE, PREMIUM,
+        }
+
+        public UserModel() {
+            this.createdAt = LocalDateTime.now();
+            this.updatedAt = LocalDateTime.now();
+            this.status = UserStatus.ATIVO;
+            this.verificado = false;
+            this.plano = Plano.FREE;
+        }
+
+    }
+
