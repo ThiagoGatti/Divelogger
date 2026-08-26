@@ -7,6 +7,7 @@ import 'activity_page.dart';
 import 'dive_sites_page.dart';
 import 'profile_page.dart';
 import 'wave_bottom_bar.dart';
+import 'create_dive_site_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -40,8 +41,19 @@ class _HomePageState extends State<HomePage> {
 
       floatingActionButton: selectedIndex == 0
           ? FloatingActionButton(
-        onPressed: () {
-          // Futuramente abrir registro de mergulho
+        onPressed: () async {
+          final site = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const CreateDiveSitePage(),
+            ),
+          );
+
+          if (!mounted || site == null) {
+            return;
+          }
+
+          setState(() {});
         },
         backgroundColor: DiverrTheme.primary,
         foregroundColor: Colors.white,

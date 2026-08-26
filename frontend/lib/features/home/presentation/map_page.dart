@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-
+import 'dive_site_details_page.dart';
 import '../../../app/theme.dart';
 import '../../../core/session/session.dart';
 import '../data/dive_site_model.dart';
@@ -417,6 +417,15 @@ class _MapPageState extends State<MapPage> {
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DiveSiteDetailsPage(
+                          site: site,
+                        ),
+                      ),
+                    );
                   },
                   child: const Text(
                     'Ver Dive Site',
