@@ -1,20 +1,4 @@
 import 'package:flutter/material.dart';
+import '../../../app/theme.dart';
 
-class DiveLogsPage extends StatelessWidget {
-  const DiveLogsPage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const SafeArea(
-      child: Center(
-        child: Text(
-          'Meus Mergulhos',
-          style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-}
+class DiveLogsPage extends StatelessWidget { const DiveLogsPage({super.key}); @override Widget build(BuildContext context) => SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(20, 18, 20, 100), children: [const Text('Meus mergulhos', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: DiverrTheme.dark)), const SizedBox(height: 6), Text('Seu diário pessoal de experiências subaquáticas.', style: TextStyle(color: Colors.grey.shade600)), const SizedBox(height: 22), Card(child: Padding(padding: const EdgeInsets.all(24), child: Column(children: [Icon(Icons.scuba_diving_outlined, size: 52, color: DiverrTheme.primary), const SizedBox(height: 14), const Text('Ainda não há mergulhos registrados', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)), const SizedBox(height: 6), Text('Use o botão + no mapa para registrar seu primeiro mergulho.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600))])))])); }

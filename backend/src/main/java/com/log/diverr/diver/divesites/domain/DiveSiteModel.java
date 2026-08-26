@@ -16,6 +16,7 @@ import java.util.UUID;
 public class DiveSiteModel {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false)

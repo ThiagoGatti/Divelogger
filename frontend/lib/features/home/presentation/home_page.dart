@@ -18,13 +18,20 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int selectedIndex = 0;
 
-  final List<Widget> pages = const [
-    MapPage(),
-    DiveLogsPage(),
-    ActivityPage(),
-    DiveSitesPage(),
-    ProfilePage(),
-  ];
+  late final List<Widget> pages;
+
+  @override
+  void initState() {
+    super.initState();
+
+    pages = [
+      const MapPage(),
+      const DiveLogsPage(),
+      const ActivityPage(),
+      const DiveSitesPage(),
+      const ProfilePage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

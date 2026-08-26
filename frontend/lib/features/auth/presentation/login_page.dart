@@ -1,173 +1,86 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
+import '../../../core/session/session.dart';
+import '../data/auth_api.dart';
+import 'register_page.dart';
 import '../../home/presentation/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
-
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  final _email = TextEditingController();
+  final _password = TextEditingController();
+  final _api = AuthApi();
+  bool _loading = false;
+  bool _obscure = true;
 
   @override
-  void dispose() {
-    emailController.dispose();
-    passwordController.dispose();
-    super.dispose();
+  void dispose() { _email.dispose(); _password.dispose(); super.dispose(); }
+
+  Future<void> _login() async {
+    if (_email.text.trim().isEmpty || _password.text.isEmpty) {
+      _show('Informe e-mail e senha.');
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final user = await _api.login(_email.text.trim(), _password.text);
+      AppSession.instance.currentUser = user;
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomePage()), (_) => false);
+    } catch (e) {
+      if (mounted) _show(e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
-  void _login() {
-    // Por enquanto não existe autenticação.
-    // Qualquer coisa digitada permite entrar.
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const HomePage(),
-      ),
-    );
-  }
+  void _show(String text) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: DiverrTheme.background,
-      appBar: AppBar(
-        title: const Text('Entrar'),
-      ),
+      appBar: AppBar(title: const Text('Entrar')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 25),
-
-              const Center(
-                child: Icon(
-                  Icons.scuba_diving,
-                  size: 80,
-                  color: DiverrTheme.primary,
-                ),
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Center(child: Icon(Icons.scuba_diving, size: 76, color: DiverrTheme.primary)),
+            const SizedBox(height: 28),
+            Text('Bem-vindo de volta!', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, color: DiverrTheme.dark)),
+            const SizedBox(height: 8),
+            Text('Entre para acessar seus mergulhos e explorar novos lugares.', style: TextStyle(color: Colors.grey.shade600, height: 1.4)),
+            const SizedBox(height: 28),
+            _field('E-mail', _email, Icons.email_outlined, keyboard: TextInputType.emailAddress),
+            const SizedBox(height: 16),
+            Text('Senha', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _password,
+              obscureText: _obscure,
+              decoration: InputDecoration(
+                hintText: 'Digite sua senha', prefixIcon: const Icon(Icons.lock_outline),
+                suffixIcon: IconButton(onPressed: () => setState(() => _obscure = !_obscure), icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined)),
               ),
-
-              const SizedBox(height: 30),
-
-              const Text(
-                'Bem-vindo de volta!',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                  color: DiverrTheme.dark,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                'Entre para acessar seus mergulhos e explorar novos lugares.',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey.shade600,
-                  height: 1.4,
-                ),
-              ),
-
-              const SizedBox(height: 35),
-
-              const Text(
-                'E-mail',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'seu@email.com',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                'Senha',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Digite sua senha',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DiverrTheme.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-                  child: const Text(
-                    'Entrar',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              Center(
-                child: TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Esqueci minha senha',
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 26),
+            SizedBox(width: double.infinity, height: 54, child: ElevatedButton(onPressed: _loading ? null : _login, child: _loading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Entrar'))),
+            const SizedBox(height: 12),
+            Center(child: TextButton(onPressed: () {}, child: const Text('Esqueci minha senha'))),
+            const Divider(height: 32),
+            Center(child: TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage())), child: const Text('Ainda não tenho uma conta'))),
+          ]),
         ),
       ),
     );
   }
+
+  Widget _field(String label, TextEditingController controller, IconData icon, {TextInputType? keyboard}) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Text(label, style: const TextStyle(fontWeight: FontWeight.w700)), const SizedBox(height: 8),
+    TextField(controller: controller, keyboardType: keyboard, decoration: InputDecoration(hintText: 'seu@email.com', prefixIcon: Icon(icon))),
+  ]);
 }

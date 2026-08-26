@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../../auth/presentation/login_page.dart';
+import '../../auth/presentation/register_page.dart';
 
 class LandingPage extends StatelessWidget {
   const LandingPage ({super.key});
@@ -207,7 +208,7 @@ class LandingPage extends StatelessWidget {
       height: 54,
       child: OutlinedButton(
         onPressed: () {
-          // Futuramente: Navigator.push para RegisterPage
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage()));
         },
         style: OutlinedButton.styleFrom(
           foregroundColor: DiverrTheme.primary,

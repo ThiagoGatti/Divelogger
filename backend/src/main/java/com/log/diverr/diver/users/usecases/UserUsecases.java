@@ -23,14 +23,16 @@ public class UserUsecases {
 
     public UserResponseDto execute(CreateUserDto dto) {
 
-        if (userRepository.existsByEmail(dto.email())) {
+        String email = dto.email().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(email)) {
             throw new RuntimeException("E-mail já cadastrado");
         }
 
         UserModel user = new UserModel();
 
         user.setNomeCompleto(dto.nomeCompleto());
-        user.setEmail(dto.email());
+        user.setEmail(email);
         user.setTelefone(dto.telefone());
         user.setSenha(passwordEncoder.encode(dto.senha()));
         user.setDataNascimento(dto.dataNascimento());
