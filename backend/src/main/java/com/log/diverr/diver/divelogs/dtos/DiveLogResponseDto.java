@@ -1,8 +1,10 @@
 package com.log.diverr.diver.divelogs.dtos;
 
+import com.log.diverr.diver.divelogs.domain.DiveLogImageModel;
 import com.log.diverr.diver.divelogs.domain.DiveLogModel;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record DiveLogResponseDto(
@@ -32,7 +34,9 @@ public record DiveLogResponseDto(
 
         Integer avaliacao,
 
-        String observacoes
+        String observacoes,
+
+        List<String> imagens
 ) {
 
     public static DiveLogResponseDto from(DiveLogModel diveLog) {
@@ -64,7 +68,12 @@ public record DiveLogResponseDto(
 
                 diveLog.getAvaliacao(),
 
-                diveLog.getObservacoes()
+                diveLog.getObservacoes(),
+
+                diveLog.getImages()
+                        .stream()
+                        .map(DiveLogImageModel::getImageUrl)
+                        .toList()
         );
     }
 }

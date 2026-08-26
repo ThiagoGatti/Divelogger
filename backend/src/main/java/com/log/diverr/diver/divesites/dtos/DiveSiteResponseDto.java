@@ -3,7 +3,10 @@ package com.log.diverr.diver.divesites.dtos;
 import com.log.diverr.diver.divesites.domain.DiveSiteModel;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
+import java.util.List;
+import com.log.diverr.diver.divesites.domain.DiveSiteImageModel;
 
 public record DiveSiteResponseDto(
         UUID id,
@@ -15,7 +18,8 @@ public record DiveSiteResponseDto(
         BigDecimal latitude,
         BigDecimal longitude,
         Double profundidadeMaxima,
-        DiveSiteModel.TipoDiveSite tipo
+        DiveSiteModel.TipoDiveSite tipo,
+        List<String> images
 ) {
 
     public static DiveSiteResponseDto from(DiveSiteModel diveSite) {
@@ -29,7 +33,11 @@ public record DiveSiteResponseDto(
                 diveSite.getLatitude(),
                 diveSite.getLongitude(),
                 diveSite.getProfundidadeMaxima(),
-                diveSite.getTipo()
+                diveSite.getTipo(),
+                diveSite.getImages()
+                        .stream()
+                        .map(DiveSiteImageModel::getImageUrl)
+                        .toList()
         );
     }
 }

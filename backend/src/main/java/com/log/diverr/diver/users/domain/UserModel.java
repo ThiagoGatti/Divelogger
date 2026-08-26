@@ -48,6 +48,7 @@ public class UserModel {
 
         private String resetPasswordToken;
         private LocalDateTime resetPasswordTokenExpiresAt;
+        private String profileImageUrl;
 
         public enum Plano {
             FREE, PREMIUM,

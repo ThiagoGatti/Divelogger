@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -49,6 +51,14 @@ public class DiveSiteModel {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    @OneToMany(
+            mappedBy = "diveSite",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<DiveSiteImageModel> images = new ArrayList<>();
+
 
     public DiveSiteModel() {
         this.createdAt = LocalDateTime.now();

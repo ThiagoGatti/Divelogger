@@ -9,6 +9,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -67,11 +69,12 @@ public class DiveLogModel {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    public DiveLogModel() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
+    @OneToMany(
+            mappedBy = "diveLog",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<DiveLogImageModel> images = new ArrayList<>();
 
     public enum TipoCorrente {
         NENHUMA,
