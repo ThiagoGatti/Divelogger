@@ -71,13 +71,12 @@ Agora:
 PostgreSQL ✅
 Spring Boot ✅
 Flutter ✅
-
-Usuário
-Login
-Dive Sites
-Mapa
-Criar Dive Site
-Listar Dive Sites
+Usuário ✅
+Login ✅
+Dive Sites ✅
+Mapa ✅
+Criar Dive Site ✅
+Listar Dive Sites ✅
 Criar Dive Log
 Listar Dive Logs
 
