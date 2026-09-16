@@ -397,9 +397,12 @@ class _MapPageState extends State<MapPage> {
                 Text(
                   location,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: Colors.red.shade600,
                   ),
                 ),
+
+
+
 
               if (site.profundidadeMaxima != null) ...[
                 const SizedBox(height: 14),
@@ -428,7 +431,7 @@ class _MapPageState extends State<MapPage> {
                     );
                   },
                   child: const Text(
-                    'Ver Dive Site',
+                    'Ver Local',
                   ),
                 ),
               ),
