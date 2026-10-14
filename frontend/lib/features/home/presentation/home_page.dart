@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
+import '../../../core/session/session.dart';
 
 import 'map_page.dart';
 import 'dive_logs_page.dart';
@@ -39,7 +40,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       body: pages[selectedIndex],
 
-      floatingActionButton: selectedIndex == 0
+      floatingActionButton: selectedIndex == 0 && AppSession.instance.isAdmin
           ? FloatingActionButton(
         onPressed: () async {
           final site = await Navigator.push(

@@ -1,3 +1,8 @@
 package com.log.diverr.diver.auth.dtos;
 
-public record LoginDto(String email, String senha) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record LoginDto(
+        @NotBlank(message = "E-mail é obrigatório") String email,
+        @NotBlank(message = "Senha é obrigatória") String senha
+) {}

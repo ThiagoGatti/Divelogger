@@ -130,7 +130,7 @@ class _MapPageState extends State<MapPage> {
                         urlTemplate:
                         'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                         userAgentPackageName:
-                        'com.log.diverr.diver',
+                        'log.dive.diver',
                         maxZoom: 19,
                       ),
 

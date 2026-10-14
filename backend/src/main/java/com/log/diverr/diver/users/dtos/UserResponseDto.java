@@ -1,5 +1,6 @@
 package com.log.diverr.diver.users.dtos;
 
+import com.log.diverr.diver.users.domain.Role;
 import com.log.diverr.diver.users.domain.UserModel;
 
 import java.time.LocalDate;
@@ -11,7 +12,9 @@ public record UserResponseDto(
         String telefone,
         LocalDate dataNascimento,
         boolean verificado,
-        UserModel.Plano plano
+        UserModel.Plano plano,
+        Role role,
+        LocalDate planExpiresAt
 ) {
     public static UserResponseDto from(UserModel user) {
         return new UserResponseDto(
@@ -21,7 +24,9 @@ public record UserResponseDto(
                 user.getTelefone(),
                 user.getDataNascimento(),
                 user.isVerificado(),
-                user.getPlano()
+                user.getPlano(),
+                user.getRole(),
+                user.getPlanExpiresAt()
         );
     }
 }

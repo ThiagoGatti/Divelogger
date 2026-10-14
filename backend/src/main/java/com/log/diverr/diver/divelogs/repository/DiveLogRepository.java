@@ -13,4 +13,6 @@ public interface DiveLogRepository extends JpaRepository<DiveLogModel, UUID> {
     List<DiveLogModel> findByUserId(Long userId);
 
     List<DiveLogModel> findByDiveSiteId(UUID diveSiteId);
+
+    List<DiveLogModel> findByDiveSiteIdAndUserId(UUID diveSiteId, Long userId);
 }

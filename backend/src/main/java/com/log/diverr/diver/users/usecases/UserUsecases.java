@@ -1,4 +1,5 @@
 package com.log.diverr.diver.users.usecases;
+import com.log.diverr.diver.common.ApiException;
 import com.log.diverr.diver.users.domain.Role;
 import com.log.diverr.diver.users.domain.UserModel;
 import com.log.diverr.diver.users.dtos.CreateUserDto;
@@ -23,10 +24,15 @@ public class UserUsecases {
 
     public UserResponseDto execute(CreateUserDto dto) {
 
+        if (!dto.aceitouTermosUso() || !dto.aceitouPoliticaPrivacidade()) {
+            throw ApiException.badRequest(
+                    "É necessário aceitar os termos de uso e a política de privacidade");
+        }
+
         String email = dto.email().trim().toLowerCase();
 
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("E-mail já cadastrado");
+            throw ApiException.conflict("E-mail já cadastrado");
         }
 
         UserModel user = new UserModel();

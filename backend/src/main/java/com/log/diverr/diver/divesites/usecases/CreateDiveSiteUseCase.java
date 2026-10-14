@@ -1,5 +1,6 @@
 package com.log.diverr.diver.divesites.usecases;
 
+import com.log.diverr.diver.common.ApiException;
 import com.log.diverr.diver.divesites.domain.DiveSiteModel;
 import com.log.diverr.diver.divesites.dtos.CreateDiveSiteDto;
 import com.log.diverr.diver.divesites.dtos.DiveSiteResponseDto;
@@ -22,10 +23,10 @@ public class CreateDiveSiteUseCase {
         this.userRepository = userRepository;
     }
 
-    public DiveSiteResponseDto execute(CreateDiveSiteDto dto) {
+    public DiveSiteResponseDto execute(CreateDiveSiteDto dto, Long userId) {
 
-        UserModel user = userRepository.findById(dto.createdBy())
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+        UserModel user = userRepository.findById(userId)
+                .orElseThrow(() -> ApiException.unauthorized("Usuário não encontrado"));
 
         DiveSiteModel diveSite = new DiveSiteModel();
 

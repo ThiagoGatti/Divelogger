@@ -13,7 +13,6 @@ public record CreateDiveSiteDto(
         BigDecimal latitude,
         BigDecimal longitude,
         Double profundidadeMaxima,
-        DiveSiteModel.TipoDiveSite tipo,
-        Long createdBy
+        DiveSiteModel.TipoDiveSite tipo
 ) {
 }

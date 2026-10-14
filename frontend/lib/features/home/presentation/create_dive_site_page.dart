@@ -287,9 +287,7 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
       return;
     }
 
-    final user = AppSession.instance.currentUser;
-
-    if (user == null) {
+    if (!AppSession.instance.isLoggedIn) {
       _showError(
         'Usuário não encontrado. Faça login novamente.',
       );
@@ -363,7 +361,6 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
         longitude: longitude,
         profundidadeMaxima: profundidade,
         tipo: _tipo,
-        createdBy: user.id,
       );
 
       if (!mounted) {

@@ -6,7 +6,6 @@ import java.util.UUID;
 import com.log.diverr.diver.divelogs.domain.DiveLogModel;
 
 public record CreateDiveLogDto(
-        Long userId,
         UUID diveSiteId,
 
         LocalDateTime dataHora,

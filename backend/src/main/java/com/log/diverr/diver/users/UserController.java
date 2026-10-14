@@ -3,6 +3,7 @@ package com.log.diverr.diver.users;
 import com.log.diverr.diver.users.dtos.CreateUserDto;
 import com.log.diverr.diver.users.dtos.UserResponseDto;
 import com.log.diverr.diver.users.usecases.UserUsecases;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserResponseDto> createUser(
-            @RequestBody CreateUserDto dto
+            @Valid @RequestBody CreateUserDto dto
     ) {
         UserResponseDto response = userUsecases.execute(dto);
 

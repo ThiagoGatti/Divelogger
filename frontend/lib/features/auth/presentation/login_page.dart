@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
-import '../../../core/session/session.dart';
 import '../data/auth_api.dart';
 import 'register_page.dart';
 import '../../home/presentation/home_page.dart';
@@ -28,8 +27,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     setState(() => _loading = true);
     try {
-      final user = await _api.login(_email.text.trim(), _password.text);
-      AppSession.instance.currentUser = user;
+      await _api.login(_email.text.trim(), _password.text);
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomePage()), (_) => false);
     } catch (e) {

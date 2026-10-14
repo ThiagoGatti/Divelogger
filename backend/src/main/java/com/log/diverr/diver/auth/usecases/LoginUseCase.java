@@ -1,6 +1,7 @@
 package com.log.diverr.diver.auth.usecases;
 
 import com.log.diverr.diver.auth.dtos.AuthResponseDto;
+import com.log.diverr.diver.common.ApiException;
 import com.log.diverr.diver.auth.dtos.LoginDto;
 import com.log.diverr.diver.users.domain.UserModel;
 import com.log.diverr.diver.users.domain.UserStatus;
@@ -30,21 +31,15 @@ public class LoginUseCase {
         UserModel user = userRepository
                 .findByEmail(dto.email().trim().toLowerCase())
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "E-mail ou senha inválidos"
-                        )
+                        ApiException.unauthorized("E-mail ou senha inválidos")
                 );
 
         if (!passwordEncoder.matches(dto.senha(), user.getSenha())) {
-            throw new IllegalArgumentException(
-                    "E-mail ou senha inválidos"
-            );
+            throw ApiException.unauthorized("E-mail ou senha inválidos");
         }
 
         if (user.getStatus() != UserStatus.ATIVO) {
-            throw new IllegalArgumentException(
-                    "Usuário não está ativo"
-            );
+            throw ApiException.forbidden("Usuário não está ativo");
         }
 
         String token = jwtService.generateToken(user);

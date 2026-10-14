@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../core/session/session.dart';
 import '../data/auth_api.dart';
 import '../../home/presentation/home_page.dart';
 
@@ -19,13 +18,12 @@ class _RegisterPageState extends State<RegisterPage> {
   @override void dispose() { _name.dispose(); _email.dispose(); _password.dispose(); super.dispose(); }
 
   Future<void> _register() async {
-    if (_name.text.trim().isEmpty || _email.text.trim().isEmpty || _password.text.length < 6 || !_terms) {
-      _show('Preencha os dados e aceite os termos. A senha deve ter ao menos 6 caracteres.'); return;
+    if (_name.text.trim().isEmpty || _email.text.trim().isEmpty || _password.text.length < 8 || !_terms) {
+      _show('Preencha os dados e aceite os termos. A senha deve ter ao menos 8 caracteres.'); return;
     }
     setState(() => _loading = true);
     try {
-      final user = await _api.register(nomeCompleto: _name.text.trim(), email: _email.text.trim(), senha: _password.text, aceitouTermosUso: true, aceitouPoliticaPrivacidade: true);
-      AppSession.instance.currentUser = user;
+      await _api.register(nomeCompleto: _name.text.trim(), email: _email.text.trim(), senha: _password.text, aceitouTermosUso: true, aceitouPoliticaPrivacidade: true);
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const HomePage()), (_) => false);
     } catch (e) { if (mounted) _show(e.toString()); }
@@ -41,7 +39,7 @@ class _RegisterPageState extends State<RegisterPage> {
       const SizedBox(height: 8), const Text('Crie sua conta e comece a registrar suas experiências.'), const SizedBox(height: 28),
       _field('Nome completo', _name, Icons.person_outline, 'Seu nome'), const SizedBox(height: 16),
       _field('E-mail', _email, Icons.email_outlined, 'seu@email.com'), const SizedBox(height: 16),
-      _field('Senha', _password, Icons.lock_outline, 'Mínimo 6 caracteres', obscure: true), const SizedBox(height: 10),
+      _field('Senha', _password, Icons.lock_outline, 'Mínimo 8 caracteres', obscure: true), const SizedBox(height: 10),
       CheckboxListTile(value: _terms, onChanged: (v) => setState(() => _terms = v ?? false), contentPadding: EdgeInsets.zero, controlAffinity: ListTileControlAffinity.leading, title: const Text('Aceito os termos de uso e a política de privacidade.')),
       const SizedBox(height: 18),
       SizedBox(width: double.infinity, height: 54, child: ElevatedButton(onPressed: _loading ? null : _register, child: _loading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Criar minha conta'))),

@@ -1,5 +1,7 @@
 package com.log.diverr.diver.divesites;
 
+import com.log.diverr.diver.common.ApiException;
+import com.log.diverr.diver.common.CurrentUser;
 import com.log.diverr.diver.divesites.dtos.CreateDiveSiteDto;
 import com.log.diverr.diver.divesites.dtos.DiveSiteResponseDto;
 import com.log.diverr.diver.divesites.domain.DiveSiteModel;
@@ -7,6 +9,8 @@ import com.log.diverr.diver.divesites.repository.DiveSiteRepository;
 import com.log.diverr.diver.divesites.usecases.CreateDiveSiteUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,11 +33,12 @@ public class DiveSiteController {
 
     @PostMapping
     public ResponseEntity<DiveSiteResponseDto> create(
-            @RequestBody CreateDiveSiteDto dto
+            @RequestBody CreateDiveSiteDto dto,
+            @AuthenticationPrincipal Jwt jwt
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(createDiveSiteUseCase.execute(dto));
+                .body(createDiveSiteUseCase.execute(dto, CurrentUser.id(jwt)));
     }
 
     @GetMapping
@@ -53,7 +58,7 @@ public class DiveSiteController {
     ) {
 
         DiveSiteModel diveSite = diveSiteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Dive site não encontrado"));
+                .orElseThrow(() -> ApiException.notFound("Dive site não encontrado"));
 
         return ResponseEntity.ok(
                 DiveSiteResponseDto.from(diveSite)

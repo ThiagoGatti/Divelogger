@@ -107,8 +107,9 @@ class ProfilePage extends StatelessWidget {
      _item(
       icon: Icons.logout,
       title: 'Sair',
-      onTap: () {
-       AppSession.instance.currentUser = null;
+      onTap: () async {
+       await AppSession.instance.signOut();
+       if (!context.mounted) return;
 
        Navigator.pushAndRemoveUntil(
         context,
