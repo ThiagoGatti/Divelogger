@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import com.log.diverr.diver.users.domain.Role;
 
 @Getter
 @Setter
@@ -42,6 +43,9 @@ public class UserModel {
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         private LocalDate planExpiresAt;
 
+        @Enumerated(EnumType.STRING)
+        @Column(nullable = false, length = 20)
+        private Role role = Role.USER;
 
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
@@ -60,6 +64,9 @@ public class UserModel {
             this.status = UserStatus.ATIVO;
             this.verificado = false;
             this.plano = Plano.FREE;
+            this.role = Role.USER;
+
+
         }
 
     }

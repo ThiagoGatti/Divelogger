@@ -1,5 +1,5 @@
 package com.log.diverr.diver.users.usecases;
-
+import com.log.diverr.diver.users.domain.Role;
 import com.log.diverr.diver.users.domain.UserModel;
 import com.log.diverr.diver.users.dtos.CreateUserDto;
 import com.log.diverr.diver.users.dtos.UserResponseDto;
@@ -30,7 +30,7 @@ public class UserUsecases {
         }
 
         UserModel user = new UserModel();
-
+        user.setRole(Role.USER);
         user.setNomeCompleto(dto.nomeCompleto());
         user.setEmail(email);
         user.setTelefone(dto.telefone());
