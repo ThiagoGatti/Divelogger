@@ -1,5 +1,6 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/session/session.dart';
+import 'me_api.dart';
 import 'user_model.dart';
 
 class AuthApi {
@@ -26,7 +27,8 @@ class AuthApi {
       expiresInSeconds: (json['expiresIn'] as num?)?.toInt() ?? 3600,
       user: user,
     );
-    return user;
+    await MeApi(api: _api).refresh();
+    return AppSession.instance.currentUser ?? user;
   }
 
   /// Cria a conta e já entra (o backend de cadastro não devolve token).

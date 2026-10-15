@@ -3,10 +3,14 @@ import 'package:geolocator/geolocator.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/session/session.dart';
+import '../data/dive_site_model.dart';
 import '../data/dive_sites_api.dart';
 
 class CreateDiveSitePage extends StatefulWidget {
-  const CreateDiveSitePage({super.key});
+  /// Quando informado, a tela funciona em modo EDIÇÃO (somente ADMIN).
+  final DiveSiteModel? site;
+
+  const CreateDiveSitePage({super.key, this.site});
 
   @override
   State<CreateDiveSitePage> createState() => _CreateDiveSitePageState();
@@ -68,6 +72,29 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
       'label': 'Outro',
     },
   ];
+
+  bool get _isEdit => widget.site != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.site;
+    if (s != null) {
+      _nomeController.text = s.nome;
+      _descricaoController.text = s.descricao ?? '';
+      _paisController.text = s.pais;
+      _estadoController.text = s.estado ?? '';
+      _cidadeController.text = s.cidade ?? '';
+      _latitudeController.text = s.latitude.toString();
+      _longitudeController.text = s.longitude.toString();
+      _profundidadeController.text = s.profundidadeMaxima == null
+          ? ''
+          : (s.profundidadeMaxima! == s.profundidadeMaxima!.truncateToDouble()
+              ? s.profundidadeMaxima!.toStringAsFixed(0)
+              : s.profundidadeMaxima.toString());
+      _tipo = s.tipo;
+    }
+  }
 
   @override
   void dispose() {
@@ -342,7 +369,29 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
     });
 
     try {
-      final site = await _api.create(
+      final site = _isEdit
+          ? await _api.update(
+        widget.site!.id,
+        nome: _nomeController.text.trim(),
+        descricao:
+        _descricaoController.text.trim().isEmpty
+            ? null
+            : _descricaoController.text.trim(),
+        pais: _paisController.text.trim(),
+        estado:
+        _estadoController.text.trim().isEmpty
+            ? null
+            : _estadoController.text.trim(),
+        cidade:
+        _cidadeController.text.trim().isEmpty
+            ? null
+            : _cidadeController.text.trim(),
+        latitude: latitude,
+        longitude: longitude,
+        profundidadeMaxima: profundidade,
+        tipo: _tipo,
+      )
+          : await _api.create(
         nome: _nomeController.text.trim(),
         descricao:
         _descricaoController.text.trim().isEmpty
@@ -370,9 +419,11 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
       Navigator.pop(context, site);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Dive Site criado com sucesso!',
+            _isEdit
+                ? 'Dive Site atualizado!'
+                : 'Dive Site criado com sucesso!',
           ),
         ),
       );
@@ -457,9 +508,9 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Novo Dive Site',
-          style: TextStyle(
+        title: Text(
+          _isEdit ? 'Editar Dive Site' : 'Novo Dive Site',
+          style: const TextStyle(
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -831,9 +882,9 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
                     color: Colors.white,
                   ),
                 )
-                    : const Text(
-                  'Criar Dive Site',
-                  style: TextStyle(
+                    : Text(
+                  _isEdit ? 'Salvar alterações' : 'Criar Dive Site',
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight:
                     FontWeight.w800,

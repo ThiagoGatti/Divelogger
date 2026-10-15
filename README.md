@@ -80,6 +80,62 @@ flutter run --dart-define-from-file=env/prod.json
 flutter build appbundle --dart-define-from-file=env/prod.json
 ```
 
+## Imagens (Amazon S3)
+
+As fotos ficam em um bucket S3 **privado**. O app nunca recebe credenciais: o backend gera URLs pré-assinadas
+(upload de 10 min, leitura de 1 h) e o celular envia a foto direto para o S3.
+
+Configuração única:
+
+1. **Bucket:** S3 → Criar bucket em `sa-east-1` (ex.: `diverr-media-<sufixo>`), com **Bloquear todo acesso público** ligado.
+2. **IAM:** adicione uma política em linha ao perfil da instância do Beanstalk (`aws-elasticbeanstalk-ec2-role`):
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+    "Resource": "arn:aws:s3:::NOME-DO-BUCKET/*"
+  }]
+}
+```
+
+3. **Variáveis no Beanstalk:** `S3_BUCKET=NOME-DO-BUCKET` e `S3_REGION=sa-east-1`.
+   Sem `S3_BUCKET` o upload retorna 503 (útil no ambiente local).
+4. Não precisa de CORS (o upload é feito pelo app nativo, não por navegador).
+
+Chaves: `dive-logs/{userId}/{diveLogId}/{uuid}.jpg` e `dive-sites/{siteId}/{uuid}.jpg`.
+Fotos enviadas mas nunca registradas ficam órfãs: crie uma regra de ciclo de vida no bucket se quiser limpeza automática.
+
+## Perfis e planos
+
+| | USER | ADMIN |
+|---|---|---|
+| Ver Dive Sites ativos, registrar mergulhos | sim | sim |
+| Criar / editar / desativar Dive Sites e suas fotos | não | **sim** |
+| Painel de usuários e planos (`/api/admin/**`) | não | **sim** |
+
+| | FREE | PREMIUM |
+|---|---|---|
+| Mergulhos | até 30 (`PLAN_FREE_MAX_DIVE_LOGS`) | ilimitados |
+| Fotos por mergulho | 3 (`PLAN_FREE_MAX_PHOTOS`) | 10 (`PLAN_PREMIUM_MAX_PHOTOS`) |
+| Estatísticas | básicas | avançadas |
+| Exportação | não | sim (a implementar) |
+
+PREMIUM com `plan_expires_at` vencido vale como FREE. Os limites são aplicados no backend (HTTP 403 com `code: PLAN_LIMIT`)
+e refletidos na interface a partir de `GET /api/me`.
+
+## Endpoints principais
+
+- `GET /api/me` — usuário atual + permissões do plano
+- `GET /api/dive-sites[?includeInactive=true (admin)]`, `GET /api/dive-sites/{id}`
+- `POST|PUT /api/dive-sites[/{id}]`, `PATCH /api/dive-sites/{id}/ativo` — **ADMIN**
+- `POST /api/dive-sites/{id}/images/presign`, `POST /api/dive-sites/{id}/images`, `DELETE /api/dive-sites/{id}/images/{imageId}` — **ADMIN**
+- `GET /api/dive-logs/me`, `POST /api/dive-logs`, `GET|PUT|DELETE /api/dive-logs/{id}` — somente do próprio usuário
+- `POST /api/dive-logs/{id}/images/presign`, `POST /api/dive-logs/{id}/images`, `DELETE /api/dive-logs/{id}/images/{imageId}`
+- `GET /api/admin/users`, `PATCH /api/admin/users/{id}/plan` — **ADMIN**
+
 ## Architecture
 
 - `backend/`: Spring Boot REST API

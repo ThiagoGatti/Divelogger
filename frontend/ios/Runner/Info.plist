@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>O Diverr usa sua localização para mostrar mergulhos e pontos de mergulho próximos a você.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>O Diverr acessa suas fotos para você anexar imagens aos seus mergulhos.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>O Diverr usa a câmera para você fotografar seus mergulhos e locais.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>

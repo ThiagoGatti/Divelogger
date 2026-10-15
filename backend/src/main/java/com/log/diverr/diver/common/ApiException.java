@@ -6,14 +6,25 @@ import org.springframework.http.HttpStatus;
 public class ApiException extends RuntimeException {
 
     private final HttpStatus status;
+    private final String code;
 
     public ApiException(HttpStatus status, String message) {
+        this(status, message, null);
+    }
+
+    public ApiException(HttpStatus status, String message, String code) {
         super(message);
         this.status = status;
+        this.code = code;
     }
 
     public HttpStatus getStatus() {
         return status;
+    }
+
+    /** Código estável para o app reagir (ex.: PLAN_LIMIT). Pode ser null. */
+    public String getCode() {
+        return code;
     }
 
     public static ApiException badRequest(String message) {
@@ -34,5 +45,10 @@ public class ApiException extends RuntimeException {
 
     public static ApiException conflict(String message) {
         return new ApiException(HttpStatus.CONFLICT, message);
+    }
+
+    /** Recurso bloqueado pelo plano atual (FREE). O app mostra a oferta de upgrade. */
+    public static ApiException planLimit(String message) {
+        return new ApiException(HttpStatus.FORBIDDEN, message, "PLAN_LIMIT");
     }
 }

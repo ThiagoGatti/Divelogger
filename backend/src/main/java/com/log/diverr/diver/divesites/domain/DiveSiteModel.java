@@ -49,6 +49,10 @@ public class DiveSiteModel {
     @JoinColumn(name = "created_by")
     private UserModel createdBy;
 
+    /** Desativação lógica: locais inativos somem para usuários comuns, mas os mergulhos antigos continuam válidos. */
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean ativo = true;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme.dart';
-import '../../../core/session/session.dart';
 
-import 'map_page.dart';
-import 'dive_logs_page.dart';
+import '../../../core/events.dart';
+import '../../../core/session/session.dart';
+import '../../auth/data/me_api.dart';
 import 'activity_page.dart';
-import 'dive_sites_page.dart';
-import 'profile_page.dart';
-import 'wave_bottom_bar.dart';
 import 'create_dive_site_page.dart';
+import 'dive_logs_page.dart';
+import 'dive_sites_page.dart';
+import 'map_page.dart';
+import 'profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,58 +18,81 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int selectedIndex = 0;
+  int _index = 0;
 
-  late final List<Widget> pages;
+  static const _pages = <Widget>[
+    MapPage(),
+    DiveLogsPage(),
+    ActivityPage(),
+    DiveSitesPage(),
+    ProfilePage(),
+  ];
 
   @override
   void initState() {
     super.initState();
+    // Atualiza role/plano/limites com o que o servidor diz agora (o token pode estar desatualizado).
+    MeApi().refresh();
+  }
 
-    pages = [
-      const MapPage(),
-      const DiveLogsPage(),
-      const ActivityPage(),
-      const DiveSitesPage(),
-      const ProfilePage(),
-    ];
+  Future<void> _createSite() async {
+    final site = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CreateDiveSitePage()),
+    );
+    if (site != null) AppEvents.notifyDiveSitesChanged();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: pages[selectedIndex],
+    return ValueListenableBuilder<int>(
+      valueListenable: AppSession.instance.changed,
+      builder: (context, _, __) {
+        final showSiteFab = _index == 0 && AppSession.instance.isAdmin;
 
-      floatingActionButton: selectedIndex == 0 && AppSession.instance.isAdmin
-          ? FloatingActionButton(
-        onPressed: () async {
-          final site = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CreateDiveSitePage(),
-            ),
-          );
-
-          if (!mounted || site == null) {
-            return;
-          }
-
-          setState(() {});
-        },
-        backgroundColor: DiverrTheme.primary,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
-      )
-          : null,
-
-      bottomNavigationBar: WaveBottomBar(
-        selectedIndex: selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            selectedIndex = index;
-          });
-        },
-      ),
+        return Scaffold(
+          // IndexedStack mantém o estado de cada aba (mapa, listas) ao trocar de aba.
+          body: IndexedStack(index: _index, children: _pages),
+          floatingActionButton: showSiteFab
+              ? FloatingActionButton.extended(
+                  onPressed: _createSite,
+                  icon: const Icon(Icons.add_location_alt_outlined),
+                  label: const Text('Novo local', style: TextStyle(fontWeight: FontWeight.w800)),
+                )
+              : null,
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: _index,
+            onDestinationSelected: (i) => setState(() => _index = i),
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.map_outlined),
+                selectedIcon: Icon(Icons.map),
+                label: 'Mapa',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.scuba_diving_outlined),
+                selectedIcon: Icon(Icons.scuba_diving),
+                label: 'Mergulhos',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.bar_chart_outlined),
+                selectedIcon: Icon(Icons.bar_chart),
+                label: 'Atividade',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.location_on_outlined),
+                selectedIcon: Icon(Icons.location_on),
+                label: 'Sites',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline),
+                selectedIcon: Icon(Icons.person),
+                label: 'Perfil',
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

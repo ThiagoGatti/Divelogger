@@ -1,7 +1,8 @@
 package com.log.diverr.diver.divelogs.dtos;
 
-import com.log.diverr.diver.divelogs.domain.DiveLogImageModel;
 import com.log.diverr.diver.divelogs.domain.DiveLogModel;
+import com.log.diverr.diver.storage.ImageDto;
+import com.log.diverr.diver.storage.ImageStorageService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,70 +10,49 @@ import java.util.UUID;
 
 public record DiveLogResponseDto(
         UUID id,
-
         Long userId,
         UUID diveSiteId,
         String diveSiteNome,
-
         LocalDateTime dataHora,
-
         Integer duracaoMinutos,
-
         Double profundidadeMaxima,
         Double profundidadeMedia,
-
         Double visibilidade,
         Double temperaturaAgua,
-
         DiveLogModel.TipoCorrente corrente,
         DiveLogModel.TipoAgua tipoAgua,
         DiveLogModel.TipoEntrada tipoEntrada,
         DiveLogModel.TipoGas tipoGas,
-
         Integer pressaoInicial,
         Integer pressaoFinal,
-
         Integer avaliacao,
-
         String observacoes,
-
-        List<String> imagens
+        LocalDateTime updatedAt,
+        List<ImageDto> imagens
 ) {
-
-    public static DiveLogResponseDto from(DiveLogModel diveLog) {
-
+    public static DiveLogResponseDto from(DiveLogModel log, ImageStorageService storage) {
         return new DiveLogResponseDto(
-                diveLog.getId(),
-
-                diveLog.getUser().getId(),
-                diveLog.getDiveSite().getId(),
-                diveLog.getDiveSite().getNome(),
-
-                diveLog.getDataHora(),
-
-                diveLog.getDuracaoMinutos(),
-
-                diveLog.getProfundidadeMaxima(),
-                diveLog.getProfundidadeMedia(),
-
-                diveLog.getVisibilidade(),
-                diveLog.getTemperaturaAgua(),
-
-                diveLog.getCorrente(),
-                diveLog.getTipoAgua(),
-                diveLog.getTipoEntrada(),
-                diveLog.getTipoGas(),
-
-                diveLog.getPressaoInicial(),
-                diveLog.getPressaoFinal(),
-
-                diveLog.getAvaliacao(),
-
-                diveLog.getObservacoes(),
-
-                diveLog.getImages()
-                        .stream()
-                        .map(DiveLogImageModel::getImageUrl)
+                log.getId(),
+                log.getUser().getId(),
+                log.getDiveSite().getId(),
+                log.getDiveSite().getNome(),
+                log.getDataHora(),
+                log.getDuracaoMinutos(),
+                log.getProfundidadeMaxima(),
+                log.getProfundidadeMedia(),
+                log.getVisibilidade(),
+                log.getTemperaturaAgua(),
+                log.getCorrente(),
+                log.getTipoAgua(),
+                log.getTipoEntrada(),
+                log.getTipoGas(),
+                log.getPressaoInicial(),
+                log.getPressaoFinal(),
+                log.getAvaliacao(),
+                log.getObservacoes(),
+                log.getUpdatedAt(),
+                log.getImages().stream()
+                        .map(i -> new ImageDto(i.getId(), storage.urlFor(i.getStorageKey())))
                         .toList()
         );
     }

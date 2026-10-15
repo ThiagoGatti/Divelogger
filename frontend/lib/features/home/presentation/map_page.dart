@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import '../../../core/events.dart';
 import 'dive_site_details_page.dart';
 import '../../../app/theme.dart';
 import '../../../core/session/session.dart';
@@ -27,6 +28,14 @@ class _MapPageState extends State<MapPage> {
   void initState() {
     super.initState();
     _loadSites();
+    AppEvents.diveSitesChanged.addListener(_loadSites);
+  }
+
+  @override
+  void dispose() {
+    AppEvents.diveSitesChanged.removeListener(_loadSites);
+    _mapController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSites() async {
@@ -421,14 +430,18 @@ class _MapPageState extends State<MapPage> {
                   onPressed: () {
                     Navigator.pop(context);
 
-                    Navigator.push(
+                    Navigator.push<bool>(
                       context,
                       MaterialPageRoute(
                         builder: (_) => DiveSiteDetailsPage(
                           site: site,
                         ),
                       ),
-                    );
+                    ).then((changed) {
+                      if (changed == true) {
+                        AppEvents.notifyDiveSitesChanged();
+                      }
+                    });
                   },
                   child: const Text(
                     'Ver Local',

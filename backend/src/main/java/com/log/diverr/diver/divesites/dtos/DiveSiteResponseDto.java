@@ -1,12 +1,13 @@
 package com.log.diverr.diver.divesites.dtos;
 
+import com.log.diverr.diver.divesites.domain.DiveSiteImageModel;
 import com.log.diverr.diver.divesites.domain.DiveSiteModel;
+import com.log.diverr.diver.storage.ImageDto;
+import com.log.diverr.diver.storage.ImageStorageService;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
-import java.util.List;
-import com.log.diverr.diver.divesites.domain.DiveSiteImageModel;
 
 public record DiveSiteResponseDto(
         UUID id,
@@ -19,24 +20,24 @@ public record DiveSiteResponseDto(
         BigDecimal longitude,
         Double profundidadeMaxima,
         DiveSiteModel.TipoDiveSite tipo,
-        List<String> images
+        boolean ativo,
+        List<ImageDto> images
 ) {
-
-    public static DiveSiteResponseDto from(DiveSiteModel diveSite) {
+    public static DiveSiteResponseDto from(DiveSiteModel site, ImageStorageService storage) {
         return new DiveSiteResponseDto(
-                diveSite.getId(),
-                diveSite.getNome(),
-                diveSite.getDescricao(),
-                diveSite.getPais(),
-                diveSite.getEstado(),
-                diveSite.getCidade(),
-                diveSite.getLatitude(),
-                diveSite.getLongitude(),
-                diveSite.getProfundidadeMaxima(),
-                diveSite.getTipo(),
-                diveSite.getImages()
-                        .stream()
-                        .map(DiveSiteImageModel::getImageUrl)
+                site.getId(),
+                site.getNome(),
+                site.getDescricao(),
+                site.getPais(),
+                site.getEstado(),
+                site.getCidade(),
+                site.getLatitude(),
+                site.getLongitude(),
+                site.getProfundidadeMaxima(),
+                site.getTipo(),
+                site.isAtivo(),
+                site.getImages().stream()
+                        .map((DiveSiteImageModel i) -> new ImageDto(i.getId(), storage.urlFor(i.getStorageKey())))
                         .toList()
         );
     }

@@ -2,86 +2,74 @@ package com.log.diverr.diver.divelogs;
 
 import com.log.diverr.diver.common.ApiException;
 import com.log.diverr.diver.common.CurrentUser;
-import com.log.diverr.diver.divelogs.domain.DiveLogModel;
 import com.log.diverr.diver.divelogs.dtos.CreateDiveLogDto;
 import com.log.diverr.diver.divelogs.dtos.DiveLogResponseDto;
-import com.log.diverr.diver.divelogs.repository.DiveLogRepository;
-import com.log.diverr.diver.divelogs.usecases.CreateDiveLogUseCase;
+import com.log.diverr.diver.divelogs.usecases.DiveLogService;
+import com.log.diverr.diver.storage.PresignRequestDto;
+import com.log.diverr.diver.storage.PresignResponseDto;
+import com.log.diverr.diver.storage.RegisterImageDto;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Regra atual (antes do módulo social): cada usuário só enxerga os PRÓPRIOS mergulhos.
- * O dono sempre vem do token, nunca do corpo da requisição.
+ * Cada usuário só enxerga/edita os PRÓPRIOS mergulhos. O dono sempre vem do token.
+ * (O módulo social vai adicionar visibilidade por privacidade depois.)
  */
 @RestController
 @RequestMapping("/api/dive-logs")
 public class DiveLogController {
 
-    private final CreateDiveLogUseCase createDiveLogUseCase;
-    private final DiveLogRepository diveLogRepository;
+    private final DiveLogService service;
 
-    public DiveLogController(
-            CreateDiveLogUseCase createDiveLogUseCase,
-            DiveLogRepository diveLogRepository
-    ) {
-        this.createDiveLogUseCase = createDiveLogUseCase;
-        this.diveLogRepository = diveLogRepository;
+    public DiveLogController(DiveLogService service) {
+        this.service = service;
     }
 
     @PostMapping
-    @Transactional
     public ResponseEntity<DiveLogResponseDto> create(
-            @RequestBody CreateDiveLogDto dto,
+            @Valid @RequestBody CreateDiveLogDto dto,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        DiveLogResponseDto response =
-                createDiveLogUseCase.execute(dto, CurrentUser.id(jwt));
-
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto, CurrentUser.id(jwt)));
     }
 
-    /** Meus mergulhos. */
     @GetMapping("/me")
-    @Transactional(readOnly = true)
-    public ResponseEntity<List<DiveLogResponseDto>> findMine(
-            @AuthenticationPrincipal Jwt jwt
-    ) {
-        return ResponseEntity.ok(
-                diveLogRepository.findByUserId(CurrentUser.id(jwt))
-                        .stream()
-                        .map(DiveLogResponseDto::from)
-                        .toList()
-        );
+    public ResponseEntity<List<DiveLogResponseDto>> findMine(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(service.listMine(CurrentUser.id(jwt)));
     }
 
     @GetMapping("/{id}")
-    @Transactional(readOnly = true)
     public ResponseEntity<DiveLogResponseDto> findById(
             @PathVariable UUID id,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        DiveLogModel diveLog = diveLogRepository.findById(id)
-                .orElseThrow(() -> ApiException.notFound("Dive log não encontrado"));
+        return ResponseEntity.ok(service.get(id, CurrentUser.id(jwt), CurrentUser.isAdmin(jwt)));
+    }
 
-        // 404 (e não 403) para não revelar a existência de logs de outras pessoas
-        if (!diveLog.getUser().getId().equals(CurrentUser.id(jwt)) && !CurrentUser.isAdmin(jwt)) {
-            throw ApiException.notFound("Dive log não encontrado");
-        }
+    @PutMapping("/{id}")
+    public ResponseEntity<DiveLogResponseDto> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody CreateDiveLogDto dto,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.update(id, dto, CurrentUser.id(jwt)));
+    }
 
-        return ResponseEntity.ok(DiveLogResponseDto.from(diveLog));
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id, @AuthenticationPrincipal Jwt jwt) {
+        service.delete(id, CurrentUser.id(jwt));
+        return ResponseEntity.noContent().build();
     }
 
     /** Compatibilidade: só o próprio usuário (ou admin) pode listar por userId. */
     @GetMapping("/user/{userId}")
-    @Transactional(readOnly = true)
     public ResponseEntity<List<DiveLogResponseDto>> findByUser(
             @PathVariable Long userId,
             @AuthenticationPrincipal Jwt jwt
@@ -89,27 +77,45 @@ public class DiveLogController {
         if (!userId.equals(CurrentUser.id(jwt)) && !CurrentUser.isAdmin(jwt)) {
             throw ApiException.forbidden("Você não tem permissão para ver estes mergulhos");
         }
-
-        return ResponseEntity.ok(
-                diveLogRepository.findByUserId(userId)
-                        .stream()
-                        .map(DiveLogResponseDto::from)
-                        .toList()
-        );
+        return ResponseEntity.ok(service.listMine(userId));
     }
 
-    /** Meus mergulhos em um determinado Dive Site. */
+    /** Meus mergulhos em um Dive Site. */
     @GetMapping("/site/{diveSiteId}")
-    @Transactional(readOnly = true)
     public ResponseEntity<List<DiveLogResponseDto>> findByDiveSite(
             @PathVariable UUID diveSiteId,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        return ResponseEntity.ok(
-                diveLogRepository.findByDiveSiteIdAndUserId(diveSiteId, CurrentUser.id(jwt))
-                        .stream()
-                        .map(DiveLogResponseDto::from)
-                        .toList()
-        );
+        return ResponseEntity.ok(service.listMineBySite(diveSiteId, CurrentUser.id(jwt)));
+    }
+
+    // ---- imagens ----
+
+    @PostMapping("/{id}/images/presign")
+    public ResponseEntity<PresignResponseDto> presign(
+            @PathVariable UUID id,
+            @Valid @RequestBody PresignRequestDto dto,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.presignImage(id, CurrentUser.id(jwt), dto));
+    }
+
+    @PostMapping("/{id}/images")
+    public ResponseEntity<DiveLogResponseDto> addImage(
+            @PathVariable UUID id,
+            @Valid @RequestBody RegisterImageDto dto,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.addImage(id, CurrentUser.id(jwt), dto.key()));
+    }
+
+    @DeleteMapping("/{id}/images/{imageId}")
+    public ResponseEntity<DiveLogResponseDto> removeImage(
+            @PathVariable UUID id,
+            @PathVariable UUID imageId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.removeImage(id, imageId, CurrentUser.id(jwt)));
     }
 }

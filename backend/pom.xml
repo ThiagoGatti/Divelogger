@@ -21,7 +21,21 @@
 
 	<properties>
 		<java.version>21</java.version>
+		<!-- Mantido em 2.29.x: a partir da 2.30 o SDK adiciona checksum padrão que quebra uploads por URL pré-assinada -->
+		<aws.sdk.version>2.29.0</aws.sdk.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>software.amazon.awssdk</groupId>
+				<artifactId>bom</artifactId>
+				<version>${aws.sdk.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
 
@@ -66,6 +80,12 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- Armazenamento de imagens (S3) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
 		</dependency>
 
 		<!-- Lombok -->

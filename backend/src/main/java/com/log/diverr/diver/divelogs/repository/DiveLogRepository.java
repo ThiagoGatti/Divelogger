@@ -10,9 +10,9 @@ import java.util.UUID;
 @Repository
 public interface DiveLogRepository extends JpaRepository<DiveLogModel, UUID> {
 
-    List<DiveLogModel> findByUserId(Long userId);
+    List<DiveLogModel> findByUserIdOrderByDataHoraDesc(Long userId);
 
-    List<DiveLogModel> findByDiveSiteId(UUID diveSiteId);
+    List<DiveLogModel> findByDiveSiteIdAndUserIdOrderByDataHoraDesc(UUID diveSiteId, Long userId);
 
-    List<DiveLogModel> findByDiveSiteIdAndUserId(UUID diveSiteId, Long userId);
+    long countByUserId(Long userId);
 }

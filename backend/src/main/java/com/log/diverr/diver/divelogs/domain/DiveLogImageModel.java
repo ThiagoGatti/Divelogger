@@ -22,8 +22,9 @@ public class DiveLogImageModel {
     @JoinColumn(name = "dive_log_id", nullable = false)
     private DiveLogModel diveLog;
 
-    @Column(nullable = false)
-    private String imageUrl;
+    /** Chave do objeto no S3 (a coluna mantém o nome antigo para não alterar o schema). */
+    @Column(name = "image_url", nullable = false)
+    private String storageKey;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

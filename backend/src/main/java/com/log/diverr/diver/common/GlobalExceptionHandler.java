@@ -27,7 +27,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApi(ApiException e) {
-        return build(e.getStatus(), e.getMessage());
+        Map<String, Object> body = body(e.getStatus(), e.getMessage());
+        if (e.getCode() != null) {
+            body.put("code", e.getCode());
+        }
+        return ResponseEntity.status(e.getStatus()).body(body);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -57,10 +61,14 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<Map<String, Object>> build(HttpStatus status, String message) {
+        return ResponseEntity.status(status).body(body(status, message));
+    }
+
+    private Map<String, Object> body(HttpStatus status, String message) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("status", status.value());
         body.put("message", message);
         body.put("timestamp", Instant.now().toString());
-        return ResponseEntity.status(status).body(body);
+        return body;
     }
 }

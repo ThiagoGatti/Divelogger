@@ -1,534 +1,459 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/format.dart';
+import '../../../core/images/image_service.dart';
+import '../../../core/network/api_client.dart';
+import '../../../core/session/session.dart';
+import '../../../core/ui/widgets.dart';
+import '../../dive_logs/data/dive_log_model.dart';
+import '../../dive_logs/data/dive_logs_api.dart';
+import '../../dive_logs/presentation/dive_log_details_page.dart';
+import '../../dive_logs/presentation/dive_log_form_page.dart';
 import '../data/dive_site_model.dart';
+import '../data/dive_sites_api.dart';
+import 'create_dive_site_page.dart';
 
-class DiveSiteDetailsPage extends StatelessWidget {
+/// Detalhes do Dive Site. Admin pode editar, desativar e gerenciar fotos.
+/// Ao voltar devolve true se o site mudou (a lista recarrega).
+class DiveSiteDetailsPage extends StatefulWidget {
   final DiveSiteModel site;
-
-  const DiveSiteDetailsPage({
-    super.key,
-    required this.site,
-  });
+  const DiveSiteDetailsPage({super.key, required this.site});
 
   @override
-  Widget build(BuildContext context) {
-    final location = [
-      site.cidade,
-      site.estado,
-      site.pais,
-    ]
-        .where(
-          (value) => value != null && value.isNotEmpty,
-    )
-        .join(', ');
+  State<DiveSiteDetailsPage> createState() => _DiveSiteDetailsPageState();
+}
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 280,
-            pinned: true,
-            backgroundColor: DiverrTheme.primary,
-            foregroundColor: Colors.white,
-            title: Text(
-              site.nome,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          DiverrTheme.primary,
-                          DiverrTheme.ocean,
-                        ],
-                      ),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.scuba_diving,
-                        size: 90,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
+  final _sitesApi = DiveSitesApi();
+  final _logsApi = DiveLogsApi();
+  final _images = ImageService();
 
-                  Positioned(
-                    left: 20,
-                    right: 20,
-                    bottom: 20,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(.35),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.photo_library_outlined,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Fotos do Dive Site',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+  late DiveSiteModel _site;
+  List<DiveLogModel> _myLogs = [];
+  bool _loadingLogs = true;
+  bool _changed = false;
+  bool _busy = false;
+  int _page = 0;
 
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                22,
-                20,
-                40,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    site.nome,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
+  bool get _isAdmin => AppSession.instance.isAdmin;
 
-                  const SizedBox(height: 8),
-
-                  if (location.isNotEmpty)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.location_on_outlined,
-                          color: DiverrTheme.primary,
-                          size: 21,
-                        ),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            location,
-                            style: TextStyle(
-                              fontSize: 15,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(height: 24),
-
-                  _buildSectionTitle(
-                    'Sobre o Dive Site',
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Text(
-                    site.descricao?.isNotEmpty == true
-                        ? site.descricao!
-                        : 'Nenhuma descrição foi adicionada '
-                        'para este Dive Site.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      height: 1.5,
-                      color: site.descricao?.isNotEmpty == true
-                          ? Colors.grey.shade800
-                          : Colors.grey.shade500,
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  _buildSectionTitle(
-                    'Informações',
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  _buildInfoCard(),
-
-                  const SizedBox(height: 28),
-
-                  _buildSectionTitle(
-                    'Localização',
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  _buildLocationCard(),
-
-                  const SizedBox(height: 28),
-
-                  _buildSectionTitle(
-                    'Fotos',
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  _buildPhotosPlaceholder(),
-
-                  const SizedBox(height: 28),
-
-                  _buildSectionTitle(
-                    'Mergulhos neste Dive Site',
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  _buildDivesPlaceholder(),
-
-                  const SizedBox(height: 30),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        // Futuramente:
-                        // abrir tela para registrar um mergulho
-                        // neste Dive Site.
-                      },
-                      icon: const Icon(
-                        Icons.scuba_diving,
-                      ),
-                      label: const Text(
-                        'Registrar mergulho aqui',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: DiverrTheme.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    _site = widget.site;
+    _loadMyLogs();
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.w900,
-        color: DiverrTheme.dark,
-      ),
-    );
+  Future<void> _loadMyLogs() async {
+    try {
+      final logs = await _logsApi.findMineBySite(_site.id);
+      if (!mounted) return;
+      setState(() {
+        _myLogs = logs;
+        _loadingLogs = false;
+      });
+    } on ApiException {
+      if (mounted) setState(() => _loadingLogs = false);
+    }
   }
 
-  Widget _buildInfoCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _infoItem(
-                  icon: Icons.category_outlined,
-                  label: 'Tipo',
-                  value: _tipoLabel(site.tipo),
-                ),
-              ),
+  // ------------------------------------------------------------ ações de usuário
 
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: _infoItem(
-                  icon: Icons.arrow_downward,
-                  label: 'Profundidade',
-                  value: site.profundidadeMaxima != null
-                      ? '${site.profundidadeMaxima} m'
-                      : 'Não informado',
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 18),
-
-          Row(
-            children: [
-              Expanded(
-                child: _infoItem(
-                  icon: Icons.north,
-                  label: 'Latitude',
-                  value: site.latitude.toStringAsFixed(6),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: _infoItem(
-                  icon: Icons.east,
-                  label: 'Longitude',
-                  value: site.longitude.toStringAsFixed(6),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+  Future<void> _registerDive() async {
+    final saved = await openDiveLogForm(context, site: _site);
+    if (saved) _loadMyLogs();
   }
 
-  Widget _infoItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  Future<void> _openLog(DiveLogModel log) async {
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => DiveLogDetailsPage(log: log)),
+    );
+    if (changed == true) _loadMyLogs();
+  }
+
+  // ------------------------------------------------------------ ações de admin
+
+  Future<void> _edit() async {
+    final updated = await Navigator.of(context).push<DiveSiteModel>(
+      MaterialPageRoute(builder: (_) => CreateDiveSitePage(site: _site)),
+    );
+    if (updated != null && mounted) {
+      setState(() {
+        _site = updated;
+        _changed = true;
+      });
+    }
+  }
+
+  Future<void> _toggleActive() async {
+    final deactivating = _site.ativo;
+    final ok = await confirmDialog(
+      context,
+      title: deactivating ? 'Desativar Dive Site?' : 'Reativar Dive Site?',
+      message: deactivating
+          ? 'Usuários não verão mais este local nem poderão registrar novos mergulhos nele. Mergulhos já registrados continuam salvos.'
+          : 'O local voltará a aparecer para todos os usuários.',
+      confirmLabel: deactivating ? 'Desativar' : 'Reativar',
+      destructive: deactivating,
+    );
+    if (!ok) return;
+
+    setState(() => _busy = true);
+    try {
+      final updated = await _sitesApi.setAtivo(_site.id, !_site.ativo);
+      if (!mounted) return;
+      setState(() {
+        _site = updated;
+        _busy = false;
+        _changed = true;
+      });
+      showSnack(context, deactivating ? 'Dive Site desativado.' : 'Dive Site reativado.');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showSnack(context, e.message, error: true);
+    }
+  }
+
+  Future<void> _addPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 18,
-              color: DiverrTheme.primary,
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Tirar foto'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w600,
-              ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Escolher da galeria'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
+            const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+    if (source == null) return;
 
-        const SizedBox(height: 6),
+    try {
+      final file = await _images.pick(source);
+      if (file == null || !mounted) return;
 
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w800,
+      setState(() => _busy = true);
+      final json = await _images.upload('/api/dive-sites/${_site.id}', file);
+      if (!mounted) return;
+      setState(() {
+        _site = DiveSiteModel.fromJson(json);
+        _busy = false;
+        _changed = true;
+        _page = 0;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showSnack(context, e.message, error: true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showSnack(context, 'Não foi possível adicionar a foto.', error: true);
+    }
+  }
+
+  Future<void> _removePhoto(int index) async {
+    if (!_isAdmin) return;
+    final ok = await confirmDialog(
+      context,
+      title: 'Remover foto?',
+      message: 'Esta foto será excluída do Dive Site.',
+      confirmLabel: 'Remover',
+      destructive: true,
+    );
+    if (!ok) return;
+
+    setState(() => _busy = true);
+    try {
+      final updated = await _sitesApi.removeImage(_site.id, _site.images[index].id);
+      if (!mounted) return;
+      setState(() {
+        _site = updated;
+        _busy = false;
+        _changed = true;
+        _page = 0;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showSnack(context, e.message, error: true);
+    }
+  }
+
+  // ------------------------------------------------------------ UI
+
+  Widget _gallery() {
+    final imgs = _site.images;
+    if (imgs.isEmpty) {
+      return Container(
+        decoration: const BoxDecoration(gradient: DiverrTheme.oceanGradient),
+        child: const Center(child: Icon(Icons.scuba_diving, size: 84, color: Colors.white70)),
+      );
+    }
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        PageView.builder(
+          itemCount: imgs.length,
+          onPageChanged: (i) => setState(() => _page = i),
+          itemBuilder: (_, i) => GestureDetector(
+            onTap: () => openImageViewer(
+              context,
+              imgs.map((e) => e.url).toList(),
+              imgs.map((e) => e.id).toList(),
+              i,
+            ),
+            onLongPress: _isAdmin ? () => _removePhoto(i) : null,
+            child: RemoteImage(url: imgs[i].url, cacheKey: imgs[i].id),
           ),
         ),
+        const Positioned.fill(
+          child: IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.black26, Colors.transparent, Colors.black26],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (imgs.length > 1)
+          Positioned(
+            bottom: 14,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                imgs.length,
+                (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: i == _page ? 18 : 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: i == _page ? Colors.white : Colors.white54,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildLocationCard() {
-    return Container(
-      height: 180,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            DiverrTheme.ocean.withOpacity(.85),
-            DiverrTheme.primary,
+  Widget _myLogsSection() {
+    if (_loadingLogs) return const SkeletonList(count: 1, height: 70);
+    if (_myLogs.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(DiverrTheme.radius),
+        ),
+        child: const Text(
+          'Você ainda não registrou mergulhos neste local.',
+          style: TextStyle(color: DiverrTheme.muted),
+        ),
+      );
+    }
+    return Column(
+      children: _myLogs
+          .map((l) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Card(
+                  child: ListTile(
+                    onTap: () => _openLog(l),
+                    leading: const CircleAvatar(
+                      backgroundColor: Color(0x228ED8E5),
+                      child: Icon(Icons.scuba_diving, color: DiverrTheme.primary),
+                    ),
+                    title: Text(formatDateTime(l.dataHora), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text('${formatMeters(l.profundidadeMaxima)} · ${formatDuration(l.duracaoMinutos)}'),
+                    trailing: const Icon(Icons.chevron_right),
+                  ),
+                ),
+              ))
+          .toList(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _site;
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.pop(context, _changed);
+      },
+      child: Scaffold(
+        body: Stack(
+          children: [
+            CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  expandedHeight: 280,
+                  backgroundColor: DiverrTheme.primary,
+                  foregroundColor: Colors.white,
+                  title: Text(s.nome, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  actions: [
+                    if (_isAdmin)
+                      PopupMenuButton<String>(
+                        onSelected: (v) {
+                          if (v == 'edit') _edit();
+                          if (v == 'photo') _addPhoto();
+                          if (v == 'toggle') _toggleActive();
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Editar'), contentPadding: EdgeInsets.zero)),
+                          const PopupMenuItem(value: 'photo', child: ListTile(leading: Icon(Icons.add_a_photo_outlined), title: Text('Adicionar foto'), contentPadding: EdgeInsets.zero)),
+                          PopupMenuItem(
+                            value: 'toggle',
+                            child: ListTile(
+                              leading: Icon(s.ativo ? Icons.block : Icons.check_circle_outline,
+                                  color: s.ativo ? DiverrTheme.danger : DiverrTheme.success),
+                              title: Text(s.ativo ? 'Desativar' : 'Reativar',
+                                  style: TextStyle(color: s.ativo ? DiverrTheme.danger : DiverrTheme.success)),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                  flexibleSpace: FlexibleSpaceBar(background: _gallery()),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (s.localizacao.isNotEmpty)
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_outlined, size: 18, color: DiverrTheme.muted),
+                              const SizedBox(width: 6),
+                              Expanded(child: Text(s.localizacao, style: const TextStyle(color: DiverrTheme.muted, fontWeight: FontWeight.w600))),
+                            ],
+                          ),
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            InfoChip(icon: Icons.category_outlined, text: tipoLabel(s.tipo)),
+                            if (s.profundidadeMaxima != null)
+                              InfoChip(icon: Icons.arrow_downward, text: 'até ${formatMeters(s.profundidadeMaxima)}', color: DiverrTheme.secondary),
+                            if (!s.ativo) const InfoChip(icon: Icons.block, text: 'Desativado', color: DiverrTheme.danger),
+                          ],
+                        ),
+                        if (s.descricao != null && s.descricao!.isNotEmpty) ...[
+                          const SizedBox(height: 22),
+                          const SectionTitle('Sobre o local'),
+                          Text(s.descricao!, style: const TextStyle(height: 1.5)),
+                        ],
+                        const SizedBox(height: 22),
+                        const SectionTitle('Localização'),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(DiverrTheme.radius),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.my_location, color: DiverrTheme.primary),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  '${s.latitude.toStringAsFixed(6)}, ${s.longitude.toStringAsFixed(6)}',
+                                  style: const TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (s.images.length > 1) ...[
+                          const SizedBox(height: 22),
+                          SectionTitle(
+                            'Fotos',
+                            trailing: _isAdmin
+                                ? const Text('segure para remover', style: TextStyle(fontSize: 12, color: DiverrTheme.muted))
+                                : null,
+                          ),
+                          SizedBox(
+                            height: 92,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: s.images.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 10),
+                              itemBuilder: (_, i) => GestureDetector(
+                                onTap: () => openImageViewer(
+                                  context,
+                                  s.images.map((e) => e.url).toList(),
+                                  s.images.map((e) => e.id).toList(),
+                                  i,
+                                ),
+                                onLongPress: _isAdmin ? () => _removePhoto(i) : null,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: RemoteImage(
+                                    url: s.images[i].url,
+                                    cacheKey: s.images[i].id,
+                                    width: 92,
+                                    height: 92,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 22),
+                        const SectionTitle('Meus mergulhos aqui'),
+                        _myLogsSection(),
+                        const SizedBox(height: 26),
+                        if (s.ativo)
+                          FilledButton.icon(
+                            onPressed: _registerDive,
+                            icon: const Icon(Icons.scuba_diving),
+                            label: const Text('Registrar mergulho aqui'),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_busy)
+              Positioned.fill(
+                child: Container(
+                  color: Colors.black26,
+                  child: const Center(child: CircularProgressIndicator()),
+                ),
+              ),
           ],
         ),
       ),
-      child: Stack(
-        children: [
-          const Center(
-            child: Icon(
-              Icons.location_on,
-              color: Colors.white,
-              size: 64,
-            ),
-          ),
-
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 14,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(.30),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                '${site.latitude.toStringAsFixed(6)}, '
-                    '${site.longitude.toStringAsFixed(6)}',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
-  }
-
-  Widget _buildPhotosPlaceholder() {
-    return Container(
-      height: 150,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.photo_library_outlined,
-            size: 42,
-            color: Colors.grey.shade400,
-          ),
-
-          const SizedBox(height: 10),
-
-          Text(
-            'Nenhuma foto adicionada ainda',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade600,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          Text(
-            'As fotos dos mergulhadores aparecerão aqui.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDivesPlaceholder() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Colors.grey.shade200,
-        ),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            Icons.scuba_diving,
-            size: 38,
-            color: Colors.grey.shade400,
-          ),
-
-          const SizedBox(height: 10),
-
-          Text(
-            'Ainda não há mergulhos registrados',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: Colors.grey.shade700,
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          Text(
-            'Seja o primeiro a registrar um mergulho neste local.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _tipoLabel(String? tipo) {
-    switch (tipo) {
-      case 'COSTEIRO':
-        return 'Costeiro';
-
-      case 'NAUFRAGIO':
-        return 'Naufrágio';
-
-      case 'RECIFE':
-        return 'Recife';
-
-      case 'CAVERNA':
-        return 'Caverna';
-
-      case 'PAREDE':
-        return 'Parede';
-
-      case 'PEDREIRA':
-        return 'Pedreira';
-
-      case 'LAGO':
-        return 'Lago';
-
-      case 'RIO':
-        return 'Rio';
-
-      case 'OUTRO':
-        return 'Outro';
-
-      default:
-        return 'Não informado';
-    }
   }
 }

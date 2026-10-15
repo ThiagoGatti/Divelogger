@@ -10,7 +10,12 @@ class ApiException implements Exception {
   final String message;
   final int? statusCode;
 
-  ApiException(this.message, {this.statusCode});
+  /// Código estável enviado pelo backend (ex.: PLAN_LIMIT).
+  final String? code;
+
+  ApiException(this.message, {this.statusCode, this.code});
+
+  bool get isPlanLimit => code == 'PLAN_LIMIT';
 
   bool get isUnauthorized => statusCode == 401;
   bool get isForbidden => statusCode == 403;
@@ -85,6 +90,12 @@ class ApiClient {
     await _send(true, () => _client.delete(_uri(path), headers: _headers(auth: true)));
   }
 
+  /// DELETE que devolve o recurso atualizado (ex.: remover foto).
+  Future<Map<String, dynamic>> deleteJson(String path) async {
+    final json = await _send(true, () => _client.delete(_uri(path), headers: _headers(auth: true)));
+    return _asMap(json);
+  }
+
   // ---- Internos ---------------------------------------------------------
 
   Future<dynamic> _send(bool auth, Future<http.Response> Function() request) async {
@@ -116,7 +127,11 @@ class ApiClient {
       throw ApiException('Sua sessão expirou. Entre novamente.', statusCode: 401);
     }
 
-    throw ApiException(_messageFor(response.statusCode, decoded), statusCode: response.statusCode);
+    throw ApiException(
+      _messageFor(response.statusCode, decoded),
+      statusCode: response.statusCode,
+      code: decoded is Map ? decoded['code']?.toString() : null,
+    );
   }
 
   String _messageFor(int status, dynamic decoded) {

@@ -1,21 +1,42 @@
 package com.log.diverr.diver.divelogs.dtos;
 
+import com.log.diverr.diver.divelogs.domain.DiveLogModel;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.log.diverr.diver.divelogs.domain.DiveLogModel;
-
+/** Criar e editar (PUT) um mergulho. O dono NUNCA vem daqui: é sempre o usuário do token. */
 public record CreateDiveLogDto(
+        @NotNull(message = "Selecione o Dive Site")
         UUID diveSiteId,
 
+        @NotNull(message = "Informe a data e a hora do mergulho")
         LocalDateTime dataHora,
 
+        @Min(value = 1, message = "Duração deve ser de pelo menos 1 minuto")
+        @Max(value = 1440, message = "Duração inválida")
         Integer duracaoMinutos,
 
+        @DecimalMin(value = "0.0", message = "Profundidade máxima inválida")
+        @DecimalMax(value = "400.0", message = "Profundidade máxima inválida")
         Double profundidadeMaxima,
+
+        @DecimalMin(value = "0.0", message = "Profundidade média inválida")
+        @DecimalMax(value = "400.0", message = "Profundidade média inválida")
         Double profundidadeMedia,
 
+        @DecimalMin(value = "0.0", message = "Visibilidade inválida")
+        @DecimalMax(value = "200.0", message = "Visibilidade inválida")
         Double visibilidade,
+
+        @DecimalMin(value = "-5.0", message = "Temperatura inválida")
+        @DecimalMax(value = "50.0", message = "Temperatura inválida")
         Double temperaturaAgua,
 
         DiveLogModel.TipoCorrente corrente,
@@ -23,11 +44,19 @@ public record CreateDiveLogDto(
         DiveLogModel.TipoEntrada tipoEntrada,
         DiveLogModel.TipoGas tipoGas,
 
+        @Min(value = 0, message = "Pressão inicial inválida")
+        @Max(value = 400, message = "Pressão inicial inválida")
         Integer pressaoInicial,
+
+        @Min(value = 0, message = "Pressão final inválida")
+        @Max(value = 400, message = "Pressão final inválida")
         Integer pressaoFinal,
 
+        @Min(value = 1, message = "Avaliação deve ser de 1 a 5")
+        @Max(value = 5, message = "Avaliação deve ser de 1 a 5")
         Integer avaliacao,
 
+        @Size(max = 3000, message = "Observações muito longas (máx. 3000)")
         String observacoes
 ) {
 }
