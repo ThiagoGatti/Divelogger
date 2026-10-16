@@ -17,7 +17,6 @@ const Map<String, String> kEntradaLabels = {
   'BARCO': 'Barco',
   'COSTA': 'Costa',
   'PIER': 'Píer',
-  'PISCINA': 'Piscina',
   'OUTRO': 'Outro',
 };
 
