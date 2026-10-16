@@ -78,21 +78,30 @@ public class ImageStorageService {
             throw ApiException.badRequest("Imagem muito grande (máx. " + (maxBytes / 1024 / 1024) + " MB)");
         }
 
-        PutObjectRequest put = PutObjectRequest.builder()
-                .bucket(bucket)
-                .key(key)
-                .contentType(contentType)
-                .contentLength(sizeBytes)
-                .build();
+        try {
+            PutObjectRequest put = PutObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(key)
+                    .contentType(contentType)
+                    .contentLength(sizeBytes)
+                    .build();
 
-        PresignedPutObjectRequest presigned = presigner().presignPutObject(
-                PutObjectPresignRequest.builder()
-                        .signatureDuration(Duration.ofMinutes(10))
-                        .putObjectRequest(put)
-                        .build()
-        );
+            PresignedPutObjectRequest presigned = presigner().presignPutObject(
+                    PutObjectPresignRequest.builder()
+                            .signatureDuration(Duration.ofMinutes(10))
+                            .putObjectRequest(put)
+                            .build()
+            );
 
-        return new PresignResponseDto(presigned.url().toString(), key, contentType);
+            return new PresignResponseDto(presigned.url().toString(), key, contentType);
+        } catch (RuntimeException | LinkageError e) {
+            // DIAGNÓSTICO TEMPORÁRIO: uma linha curta no log e a causa na resposta da API.
+            // Depois de resolver, troque a mensagem abaixo por um texto genérico.
+            log.error("Falha ao gerar URL de upload no S3 (bucket='{}', region='{}'): {}: {}",
+                    bucket, region.id(), e.getClass().getName(), e.getMessage());
+            throw new ApiException(HttpStatus.BAD_GATEWAY,
+                    "Falha ao preparar o envio da foto [" + e.getClass().getSimpleName() + "]: " + e.getMessage());
+        }
     }
 
     /** URL temporária de leitura. Retorna null se o S3 não estiver configurado ou falhar. */
