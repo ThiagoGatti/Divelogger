@@ -118,22 +118,30 @@ Fotos enviadas mas nunca registradas ficam órfãs: crie uma regra de ciclo de v
 
 | | FREE | PREMIUM |
 |---|---|---|
-| Mergulhos | até 30 (`PLAN_FREE_MAX_DIVE_LOGS`) | ilimitados |
-| Fotos por mergulho | 3 (`PLAN_FREE_MAX_PHOTOS`) | 10 (`PLAN_PREMIUM_MAX_PHOTOS`) |
-| Estatísticas | básicas | avançadas |
-| Exportação | não | sim (a implementar) |
+| Mergulhos registrados | **ilimitados** | ilimitados |
+| Fotos por mergulho | 2 (`PLAN_FREE_MAX_PHOTOS`) | 10 (`PLAN_PREMIUM_MAX_PHOTOS`) |
+| Fotos de cada Dive Site | 2 (`PLAN_FREE_MAX_SITE_PHOTOS`) | todas |
+| Informações do local | básicas (descrição, tipo, nível, profundidade, nota) | **avançadas** (melhor época, visibilidade, temperatura, corrente, certificação, fauna/flora, como chegar, infraestrutura, dicas, avisos) |
+| Estatísticas do perfil | básicas | avançadas |
 
-PREMIUM com `plan_expires_at` vencido vale como FREE. Os limites são aplicados no backend (HTTP 403 com `code: PLAN_LIMIT`)
-e refletidos na interface a partir de `GET /api/me`.
+As informações avançadas e as fotos extras dos locais **nem saem do servidor** para usuários Free
+(`extended` vem nulo e `extendedLocked` avisa o app). PREMIUM com `plan_expires_at` vencido vale como FREE.
+Limites de fotos retornam HTTP 403 com `code: PLAN_LIMIT`. ADMIN enxerga tudo.
+
+Privacidade dos mergulhos (`diveVisibility`): `PRIVATE`, `FOLLOWERS` (padrão) ou `PUBLIC`.
+A regra é gravada hoje e passa a ser aplicada quando o módulo de seguidores for entregue.
 
 ## Endpoints principais
 
-- `GET /api/me` — usuário atual + permissões do plano
+- `GET /api/me` — usuário atual + permissões do plano; `PATCH /api/me/profile` — @usuário, bio e privacidade
 - `GET /api/dive-sites[?includeInactive=true (admin)]`, `GET /api/dive-sites/{id}`
 - `POST|PUT /api/dive-sites[/{id}]`, `PATCH /api/dive-sites/{id}/ativo` — **ADMIN**
 - `POST /api/dive-sites/{id}/images/presign`, `POST /api/dive-sites/{id}/images`, `DELETE /api/dive-sites/{id}/images/{imageId}` — **ADMIN**
 - `GET /api/dive-logs/me`, `POST /api/dive-logs`, `GET|PUT|DELETE /api/dive-logs/{id}` — somente do próprio usuário
 - `POST /api/dive-logs/{id}/images/presign`, `POST /api/dive-logs/{id}/images`, `DELETE /api/dive-logs/{id}/images/{imageId}`
+- `GET /api/site-reviews/{siteId}`, `PUT|DELETE /api/site-reviews/{siteId}/me` — avaliações (nota 1–5 + comentário) de locais
+- `GET|POST /api/lists`, `GET|PUT|DELETE /api/lists/{id}`, `POST|DELETE /api/lists/{id}/items`, `PUT /api/lists/{id}/items/order` — listas (ranqueadas ou não)
+- `GET /api/lists/wishlist`, `POST /api/lists/wishlist/items`, `DELETE /api/lists/wishlist/items/site/{siteId}` — "Quero mergulhar"
 - `GET /api/admin/users`, `PATCH /api/admin/users/{id}/plan` — **ADMIN**
 
 ## Architecture

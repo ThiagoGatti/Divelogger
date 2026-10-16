@@ -11,6 +11,10 @@ const List<String> kMonthsShort = [
   'jul', 'ago', 'set', 'out', 'nov', 'dez',
 ];
 
+const List<String> kWeekdaysShort = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'];
+
+String weekdayShort(DateTime d) => kWeekdaysShort[d.weekday - 1];
+
 const List<String> kMonthsFull = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',

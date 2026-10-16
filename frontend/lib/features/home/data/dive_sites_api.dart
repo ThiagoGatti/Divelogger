@@ -1,6 +1,51 @@
 import '../../../core/network/api_client.dart';
 import 'dive_site_model.dart';
 
+/// Campos editáveis de um Dive Site (usado por criar e editar; somente ADMIN).
+class DiveSiteInput {
+  final String nome;
+  final String? descricao;
+  final String pais;
+  final String? estado;
+  final String? cidade;
+  final double latitude;
+  final double longitude;
+  final double? profundidadeMaxima;
+  final String? tipo;
+  final String? nivel;
+
+  /// Informações avançadas (Premium): chaves iguais às do backend.
+  final Map<String, String?> extended;
+
+  const DiveSiteInput({
+    required this.nome,
+    this.descricao,
+    required this.pais,
+    this.estado,
+    this.cidade,
+    required this.latitude,
+    required this.longitude,
+    this.profundidadeMaxima,
+    this.tipo,
+    this.nivel,
+    this.extended = const {},
+  });
+
+  Map<String, dynamic> toJson() => {
+        'nome': nome,
+        'descricao': descricao,
+        'pais': pais,
+        'estado': estado,
+        'cidade': cidade,
+        'latitude': latitude,
+        'longitude': longitude,
+        'profundidadeMaxima': profundidadeMaxima,
+        'tipo': tipo,
+        'nivel': nivel,
+        ...extended,
+      };
+}
+
 class DiveSitesApi {
   final ApiClient _api;
 
@@ -20,84 +65,12 @@ class DiveSitesApi {
     return DiveSiteModel.fromJson(await _api.get('/api/dive-sites/$id'));
   }
 
-  Map<String, dynamic> _body({
-    required String nome,
-    String? descricao,
-    required String pais,
-    String? estado,
-    String? cidade,
-    required double latitude,
-    required double longitude,
-    double? profundidadeMaxima,
-    String? tipo,
-  }) =>
-      {
-        'nome': nome,
-        'descricao': descricao,
-        'pais': pais,
-        'estado': estado,
-        'cidade': cidade,
-        'latitude': latitude,
-        'longitude': longitude,
-        'profundidadeMaxima': profundidadeMaxima,
-        'tipo': tipo,
-      };
-
-  Future<DiveSiteModel> create({
-    required String nome,
-    String? descricao,
-    required String pais,
-    String? estado,
-    String? cidade,
-    required double latitude,
-    required double longitude,
-    double? profundidadeMaxima,
-    String? tipo,
-  }) async {
-    final json = await _api.post(
-      '/api/dive-sites',
-      _body(
-        nome: nome,
-        descricao: descricao,
-        pais: pais,
-        estado: estado,
-        cidade: cidade,
-        latitude: latitude,
-        longitude: longitude,
-        profundidadeMaxima: profundidadeMaxima,
-        tipo: tipo,
-      ),
-    );
-    return DiveSiteModel.fromJson(json);
+  Future<DiveSiteModel> create(DiveSiteInput input) async {
+    return DiveSiteModel.fromJson(await _api.post('/api/dive-sites', input.toJson()));
   }
 
-  Future<DiveSiteModel> update(
-    String id, {
-    required String nome,
-    String? descricao,
-    required String pais,
-    String? estado,
-    String? cidade,
-    required double latitude,
-    required double longitude,
-    double? profundidadeMaxima,
-    String? tipo,
-  }) async {
-    final json = await _api.put(
-      '/api/dive-sites/$id',
-      _body(
-        nome: nome,
-        descricao: descricao,
-        pais: pais,
-        estado: estado,
-        cidade: cidade,
-        latitude: latitude,
-        longitude: longitude,
-        profundidadeMaxima: profundidadeMaxima,
-        tipo: tipo,
-      ),
-    );
-    return DiveSiteModel.fromJson(json);
+  Future<DiveSiteModel> update(String id, DiveSiteInput input) async {
+    return DiveSiteModel.fromJson(await _api.put('/api/dive-sites/$id', input.toJson()));
   }
 
   /// Desativar (exclusão lógica) ou reativar.

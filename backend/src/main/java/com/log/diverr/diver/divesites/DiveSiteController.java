@@ -37,7 +37,7 @@ public class DiveSiteController {
             @RequestParam(defaultValue = "false") boolean includeInactive,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        return ResponseEntity.ok(service.list(includeInactive, CurrentUser.isAdmin(jwt)));
+        return ResponseEntity.ok(service.list(includeInactive, CurrentUser.isAdmin(jwt), CurrentUser.id(jwt)));
     }
 
     @GetMapping("/{id}")
@@ -45,7 +45,7 @@ public class DiveSiteController {
             @PathVariable UUID id,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        return ResponseEntity.ok(service.get(id, CurrentUser.isAdmin(jwt)));
+        return ResponseEntity.ok(service.get(id, CurrentUser.isAdmin(jwt), CurrentUser.id(jwt)));
     }
 
     @PostMapping

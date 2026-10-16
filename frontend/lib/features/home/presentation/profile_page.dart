@@ -1,32 +1,218 @@
 import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/events.dart';
 import '../../../core/format.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/session/session.dart';
 import '../../../core/ui/widgets.dart';
-import '../../admin/presentation/admin_users_page.dart';
 import '../../auth/data/me_api.dart';
-import '../../landing/presentation/landing_page.dart';
+import '../../dive_logs/data/dive_log_model.dart';
+import '../../dive_logs/data/dive_logs_api.dart';
+import '../../dive_logs/presentation/dive_log_details_page.dart';
+import '../../lists/presentation/lists_tabs.dart';
+import '../../profile/presentation/diary_tab.dart';
+import '../../profile/presentation/settings_page.dart';
+import 'activity_page.dart';
+import 'dive_logs_page.dart';
 
-class ProfilePage extends StatelessWidget {
+/// Perfil: cabeçalho + abas Diário, Mergulhos, Quero mergulhar, Listas e Estatísticas.
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  Future<void> _logout(BuildContext context) async {
-    final ok = await confirmDialog(
-      context,
-      title: 'Sair da conta?',
-      message: 'Você precisará entrar novamente para acessar seus mergulhos.',
-      confirmLabel: 'Sair',
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final _api = DiveLogsApi();
+  List<DiveLogModel> _logs = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    AppEvents.diveLogsChanged.addListener(_load);
+  }
+
+  @override
+  void dispose() {
+    AppEvents.diveLogsChanged.removeListener(_load);
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    if (!AppSession.instance.isLoggedIn) return;
+    try {
+      final logs = await _api.findMine();
+      if (!mounted) return;
+      setState(() {
+        _logs = logs;
+        _loading = false;
+        _error = null;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.message;
+      });
+    }
+  }
+
+  Future<void> _refreshAll() async {
+    await Future.wait([_load(), MeApi().refresh()]);
+  }
+
+  Future<void> _openLast() async {
+    if (_logs.isEmpty) return;
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => DiveLogDetailsPage(log: _logs.first)),
     );
-    if (!ok) return;
+    if (changed == true) _load();
+  }
 
-    await AppSession.instance.signOut();
-    if (!context.mounted) return;
+  Widget _header(BuildContext context) {
+    final session = AppSession.instance;
+    final user = session.currentUser;
+    final ent = session.entitlements;
+    final totalMinutes = _logs.fold<int>(0, (s, l) => s + (l.duracaoMinutos ?? 0));
+    final sites = _logs.map((l) => l.diveSiteId).toSet().length;
+    final last = _logs.isEmpty ? null : _logs.first;
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LandingPage()),
-      (route) => false,
+    Widget stat(String value, String label) => Expanded(
+          child: Column(
+            children: [
+              Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+              const SizedBox(height: 2),
+              Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+            ],
+          ),
+        );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: DiverrTheme.oceanGradient,
+              borderRadius: BorderRadius.circular(DiverrTheme.radius + 4),
+              boxShadow: DiverrTheme.softShadow,
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
+                      child: Text(
+                        initialsOf(user?.nomeCompleto ?? ''),
+                        style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.nomeCompleto ?? 'Mergulhador',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+                          ),
+                          if (user?.username != null)
+                            Text('@${user!.username}', style: const TextStyle(color: Colors.white70)),
+                          const SizedBox(height: 6),
+                          Wrap(
+                            spacing: 6,
+                            children: [
+                              PlanBadge(premium: ent.isPremium),
+                              if (session.isAdmin)
+                                const InfoChip(icon: Icons.shield_outlined, text: 'ADMIN', color: Colors.white),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const SettingsPage()),
+                      ),
+                      icon: const Icon(Icons.settings_outlined, color: Colors.white),
+                      tooltip: 'Configurações',
+                    ),
+                  ],
+                ),
+                if (user?.bio != null && user!.bio!.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(user.bio!, style: const TextStyle(color: Colors.white, height: 1.35)),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    stat('${_logs.length}', 'Mergulhos'),
+                    stat('$sites', 'Locais'),
+                    stat(formatDuration(totalMinutes), 'Submerso'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (last != null) ...[
+            const SizedBox(height: 12),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: _openLast,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: RemoteImage(
+                          url: last.coverUrl,
+                          cacheKey: last.imagens.isEmpty ? null : last.imagens.first.id,
+                          width: 56,
+                          height: 56,
+                          placeholderIcon: Icons.scuba_diving,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'ÚLTIMO MERGULHO',
+                              style: TextStyle(fontSize: 11, letterSpacing: .8, fontWeight: FontWeight.w900, color: DiverrTheme.muted),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(last.diveSiteNome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
+                            Text(formatDateTime(last.dataHora), style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5)),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.chevron_right, color: DiverrTheme.muted),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -35,185 +221,67 @@ class ProfilePage extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: AppSession.instance.changed,
       builder: (context, _, __) {
-        final session = AppSession.instance;
-        final user = session.currentUser;
-        final ent = session.entitlements;
-
-        return SafeArea(
-          child: RefreshIndicator(
-            onRefresh: () => MeApi().refresh(),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 100),
-              children: [
-                const PageHeader(title: 'Perfil'),
-
-                // ---------- identidade
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    gradient: DiverrTheme.oceanGradient,
-                    borderRadius: BorderRadius.circular(DiverrTheme.radius + 4),
-                    boxShadow: DiverrTheme.softShadow,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 64,
-                        height: 64,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                        child: Text(
-                          initialsOf(user?.nomeCompleto ?? ''),
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user?.nomeCompleto ?? 'Mergulhador',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900, color: Colors.white),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              user?.email ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: Colors.white70),
-                            ),
-                            const SizedBox(height: 10),
-                            Wrap(
-                              spacing: 6,
-                              children: [
-                                PlanBadge(premium: ent.isPremium),
-                                if (session.isAdmin)
-                                  const InfoChip(icon: Icons.shield_outlined, text: 'ADMIN', color: Colors.white),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // ---------- plano
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              ent.isPremium ? Icons.workspace_premium : Icons.lock_open_outlined,
-                              color: ent.isPremium ? DiverrTheme.gold : DiverrTheme.primary,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                ent.isPremium ? 'Premium ativo' : 'Plano Free',
-                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        if (ent.isPremium) ...[
-                          Text(
-                            user?.planExpiresAt != null
-                                ? 'Válido até ${_prettyDate(user!.planExpiresAt!)}.'
-                                : 'Sem data de expiração.',
-                            style: const TextStyle(color: DiverrTheme.muted),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'Mergulhos ilimitados · até ${ent.maxPhotosPerLog} fotos por mergulho · estatísticas avançadas',
-                            style: const TextStyle(color: DiverrTheme.muted, height: 1.4),
-                          ),
-                        ] else ...[
-                          if (ent.maxDiveLogs != null) ...[
-                            Text(
-                              '${ent.diveLogsUsed} de ${ent.maxDiveLogs} mergulhos usados',
-                              style: const TextStyle(fontWeight: FontWeight.w700),
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: LinearProgressIndicator(
-                                value: (ent.diveLogsUsed / ent.maxDiveLogs!).clamp(0.0, 1.0),
-                                minHeight: 8,
-                                backgroundColor: DiverrTheme.ocean.withOpacity(.3),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
-                          Text(
-                            'Até ${ent.maxPhotosPerLog} fotos por mergulho e estatísticas básicas.',
-                            style: const TextStyle(color: DiverrTheme.muted),
-                          ),
-                          const SizedBox(height: 14),
-                          OutlinedButton.icon(
-                            onPressed: () => showUpgradeSheet(context),
-                            icon: const Icon(Icons.workspace_premium),
-                            label: const Text('Conhecer o Premium'),
-                          ),
-                        ],
+        return DefaultTabController(
+          length: 5,
+          child: SafeArea(
+            bottom: false,
+            child: NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                SliverToBoxAdapter(child: _header(context)),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _TabsDelegate(
+                    const TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      labelColor: DiverrTheme.primary,
+                      unselectedLabelColor: DiverrTheme.muted,
+                      indicatorColor: DiverrTheme.primary,
+                      labelStyle: TextStyle(fontWeight: FontWeight.w800),
+                      dividerColor: Colors.transparent,
+                      tabs: [
+                        Tab(text: 'Diário'),
+                        Tab(text: 'Mergulhos'),
+                        Tab(text: 'Quero mergulhar'),
+                        Tab(text: 'Listas'),
+                        Tab(text: 'Estatísticas'),
                       ],
                     ),
                   ),
                 ),
-
-                // ---------- admin
-                if (session.isAdmin) ...[
-                  const SizedBox(height: 22),
-                  const SectionTitle('Administração'),
-                  Card(
-                    child: ListTile(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AdminUsersPage()),
-                      ),
-                      leading: const Icon(Icons.manage_accounts_outlined, color: DiverrTheme.primary),
-                      title: const Text('Usuários e planos', style: TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: const Text('Conceder ou remover o Premium'),
-                      trailing: const Icon(Icons.chevron_right),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      'Para cadastrar, editar ou desativar locais, use a aba Sites.',
-                      style: TextStyle(color: DiverrTheme.muted, fontSize: 12.5),
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 22),
-                Card(
-                  child: ListTile(
-                    onTap: () => _logout(context),
-                    leading: const Icon(Icons.logout, color: DiverrTheme.danger),
-                    title: const Text('Sair', style: TextStyle(fontWeight: FontWeight.w700, color: DiverrTheme.danger)),
-                  ),
-                ),
               ],
+              body: TabBarView(
+                children: [
+                  DiaryTab(logs: _logs, loading: _loading, error: _error, onRefresh: _refreshAll),
+                  DiveLogsTab(logs: _logs, loading: _loading, error: _error, onRefresh: _refreshAll),
+                  const WishlistTab(),
+                  const ListsTab(),
+                  StatsTab(logs: _logs, loading: _loading, error: _error, onRefresh: _refreshAll),
+                ],
+              ),
             ),
           ),
         );
       },
     );
   }
+}
 
-  static String _prettyDate(String iso) {
-    final d = DateTime.tryParse(iso);
-    return d == null ? iso : formatDate(d);
+class _TabsDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  _TabsDelegate(this.tabBar);
+
+  @override
+  double get minExtent => tabBar.preferredSize.height;
+
+  @override
+  double get maxExtent => tabBar.preferredSize.height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(color: DiverrTheme.background, child: tabBar);
   }
+
+  @override
+  bool shouldRebuild(covariant _TabsDelegate oldDelegate) => false;
 }

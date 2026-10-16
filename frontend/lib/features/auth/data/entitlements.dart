@@ -2,9 +2,11 @@
 /// A regra real é aplicada no servidor; aqui só refletimos na interface.
 class Entitlements {
   final String plano; // FREE | PREMIUM (plano efetivo)
-  final int? maxDiveLogs; // null = ilimitado
+  final int? maxDiveLogs; // null = ilimitado (hoje sempre null)
   final int diveLogsUsed;
   final int maxPhotosPerLog;
+  final int maxSitePhotos;
+  final bool siteExtendedInfo;
   final bool advancedStats;
   final bool exportEnabled;
 
@@ -13,6 +15,8 @@ class Entitlements {
     required this.maxDiveLogs,
     required this.diveLogsUsed,
     required this.maxPhotosPerLog,
+    required this.maxSitePhotos,
+    required this.siteExtendedInfo,
     required this.advancedStats,
     required this.exportEnabled,
   });
@@ -20,25 +24,27 @@ class Entitlements {
   /// Valores conservadores usados antes de o servidor responder (ou offline).
   static const Entitlements free = Entitlements(
     plano: 'FREE',
-    maxDiveLogs: 30,
+    maxDiveLogs: null,
     diveLogsUsed: 0,
-    maxPhotosPerLog: 3,
+    maxPhotosPerLog: 2,
+    maxSitePhotos: 2,
+    siteExtendedInfo: false,
     advancedStats: false,
     exportEnabled: false,
   );
 
   bool get isPremium => plano == 'PREMIUM';
 
+  /// Mergulhos são ilimitados em todos os planos.
   bool get canCreateDiveLog => maxDiveLogs == null || diveLogsUsed < maxDiveLogs!;
-
-  int? get remainingDiveLogs =>
-      maxDiveLogs == null ? null : (maxDiveLogs! - diveLogsUsed).clamp(0, maxDiveLogs!);
 
   factory Entitlements.fromJson(Map<String, dynamic> json) => Entitlements(
         plano: json['plano']?.toString() ?? 'FREE',
         maxDiveLogs: (json['maxDiveLogs'] as num?)?.toInt(),
         diveLogsUsed: (json['diveLogsUsed'] as num?)?.toInt() ?? 0,
-        maxPhotosPerLog: (json['maxPhotosPerLog'] as num?)?.toInt() ?? 3,
+        maxPhotosPerLog: (json['maxPhotosPerLog'] as num?)?.toInt() ?? 2,
+        maxSitePhotos: (json['maxSitePhotos'] as num?)?.toInt() ?? 2,
+        siteExtendedInfo: json['siteExtendedInfo'] as bool? ?? false,
         advancedStats: json['advancedStats'] as bool? ?? false,
         exportEnabled: json['exportEnabled'] as bool? ?? false,
       );

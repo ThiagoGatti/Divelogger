@@ -38,6 +38,20 @@ public record CreateDiveSiteDto(
         @PositiveOrZero(message = "Profundidade inválida")
         Double profundidadeMaxima,
 
-        DiveSiteModel.TipoDiveSite tipo
+        DiveSiteModel.TipoDiveSite tipo,
+
+        DiveSiteModel.NivelDificuldade nivel,
+
+        // ---- avançadas (Premium) ----
+        @Size(max = 200, message = "Melhor época muito longa") String melhorEpoca,
+        @Size(max = 200, message = "Visibilidade típica muito longa") String visibilidadeTipica,
+        @Size(max = 200, message = "Temperatura muito longa") String temperaturaAgua,
+        @Size(max = 200, message = "Corrente muito longa") String correnteTipica,
+        @Size(max = 200, message = "Certificação muito longa") String certificacaoMinima,
+        @Size(max = 2000, message = "Fauna e flora: máx. 2000 caracteres") String faunaFlora,
+        @Size(max = 2000, message = "Como chegar: máx. 2000 caracteres") String comoChegar,
+        @Size(max = 2000, message = "Infraestrutura: máx. 2000 caracteres") String infraestrutura,
+        @Size(max = 2000, message = "Dicas: máx. 2000 caracteres") String dicas,
+        @Size(max = 2000, message = "Avisos: máx. 2000 caracteres") String avisosSeguranca
 ) {
 }

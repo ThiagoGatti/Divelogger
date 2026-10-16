@@ -1,5 +1,6 @@
 package com.log.diverr.diver.users.dtos;
 
+import com.log.diverr.diver.users.domain.DiveVisibility;
 import com.log.diverr.diver.users.domain.Role;
 import com.log.diverr.diver.users.domain.UserModel;
 
@@ -14,7 +15,10 @@ public record UserResponseDto(
         boolean verificado,
         UserModel.Plano plano,
         Role role,
-        LocalDate planExpiresAt
+        LocalDate planExpiresAt,
+        String username,
+        String bio,
+        DiveVisibility diveVisibility
 ) {
     public static UserResponseDto from(UserModel user) {
         return new UserResponseDto(
@@ -26,7 +30,10 @@ public record UserResponseDto(
                 user.isVerificado(),
                 user.getPlano(),
                 user.getRole(),
-                user.getPlanExpiresAt()
+                user.getPlanExpiresAt(),
+                user.getUsername(),
+                user.getBio(),
+                user.getDiveVisibility()
         );
     }
 }

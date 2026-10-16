@@ -7,6 +7,9 @@ class AppEvents {
   static final ValueNotifier<int> diveLogsChanged = ValueNotifier<int>(0);
   static final ValueNotifier<int> diveSitesChanged = ValueNotifier<int>(0);
 
+  static final ValueNotifier<int> listsChanged = ValueNotifier<int>(0);
+
+  static void notifyListsChanged() => listsChanged.value++;
   static void notifyDiveLogsChanged() => diveLogsChanged.value++;
   static void notifyDiveSitesChanged() => diveSitesChanged.value++;
 }

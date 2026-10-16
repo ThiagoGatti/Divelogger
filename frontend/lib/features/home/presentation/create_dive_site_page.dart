@@ -34,6 +34,52 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
   bool _saving = false;
   bool _gettingLocation = false;
 
+  String? _nivel;
+
+  /// Informações avançadas (visíveis só para Premium/ADMIN): chave do backend, rótulo, dica, linhas.
+  static const List<(String, String, String, int)> _extFields = [
+    ('melhorEpoca', 'Melhor época', 'Ex.: outubro a março', 1),
+    ('visibilidadeTipica', 'Visibilidade típica', 'Ex.: 10 a 25 m', 1),
+    ('temperaturaAgua', 'Temperatura da água', 'Ex.: 22 a 28 °C', 1),
+    ('correnteTipica', 'Corrente típica', 'Ex.: fraca a moderada', 1),
+    ('certificacaoMinima', 'Certificação mínima', 'Ex.: Open Water', 1),
+    ('faunaFlora', 'Fauna e flora', 'O que normalmente se vê no local', 3),
+    ('comoChegar', 'Como chegar', 'Acesso, barco, trilha, estacionamento...', 3),
+    ('infraestrutura', 'Infraestrutura', 'Operadoras, banheiros, aluguel de equipamento...', 3),
+    ('dicas', 'Dicas do local', 'Dicas para quem vai mergulhar aqui', 3),
+    ('avisosSeguranca', 'Avisos de segurança', 'Perigos e cuidados importantes', 3),
+  ];
+
+  final Map<String, TextEditingController> _ext = {
+    for (final f in _extFields) f.$1: TextEditingController(),
+  };
+
+  static String? _extValue(SiteExtended e, String key) {
+    switch (key) {
+      case 'melhorEpoca':
+        return e.melhorEpoca;
+      case 'visibilidadeTipica':
+        return e.visibilidadeTipica;
+      case 'temperaturaAgua':
+        return e.temperaturaAgua;
+      case 'correnteTipica':
+        return e.correnteTipica;
+      case 'certificacaoMinima':
+        return e.certificacaoMinima;
+      case 'faunaFlora':
+        return e.faunaFlora;
+      case 'comoChegar':
+        return e.comoChegar;
+      case 'infraestrutura':
+        return e.infraestrutura;
+      case 'dicas':
+        return e.dicas;
+      case 'avisosSeguranca':
+        return e.avisosSeguranca;
+    }
+    return null;
+  }
+
   final List<Map<String, String>> _tipos = const [
     {
       'value': 'COSTEIRO',
@@ -93,6 +139,13 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
               ? s.profundidadeMaxima!.toStringAsFixed(0)
               : s.profundidadeMaxima.toString());
       _tipo = s.tipo;
+      _nivel = s.nivel;
+      final e = s.extended;
+      if (e != null) {
+        for (final f in _extFields) {
+          _ext[f.$1]!.text = _extValue(e, f.$1) ?? '';
+        }
+      }
     }
   }
 
@@ -106,6 +159,9 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
     _latitudeController.dispose();
     _longitudeController.dispose();
     _profundidadeController.dispose();
+    for (final c in _ext.values) {
+      c.dispose();
+    }
 
     super.dispose();
   }
@@ -369,48 +425,29 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
     });
 
     try {
-      final site = _isEdit
-          ? await _api.update(
-        widget.site!.id,
+      String? clean(TextEditingController c) {
+        final t = c.text.trim();
+        return t.isEmpty ? null : t;
+      }
+
+      final input = DiveSiteInput(
         nome: _nomeController.text.trim(),
-        descricao:
-        _descricaoController.text.trim().isEmpty
-            ? null
-            : _descricaoController.text.trim(),
+        descricao: clean(_descricaoController),
         pais: _paisController.text.trim(),
-        estado:
-        _estadoController.text.trim().isEmpty
-            ? null
-            : _estadoController.text.trim(),
-        cidade:
-        _cidadeController.text.trim().isEmpty
-            ? null
-            : _cidadeController.text.trim(),
+        estado: clean(_estadoController),
+        cidade: clean(_cidadeController),
         latitude: latitude,
         longitude: longitude,
         profundidadeMaxima: profundidade,
         tipo: _tipo,
-      )
-          : await _api.create(
-        nome: _nomeController.text.trim(),
-        descricao:
-        _descricaoController.text.trim().isEmpty
-            ? null
-            : _descricaoController.text.trim(),
-        pais: _paisController.text.trim(),
-        estado:
-        _estadoController.text.trim().isEmpty
-            ? null
-            : _estadoController.text.trim(),
-        cidade:
-        _cidadeController.text.trim().isEmpty
-            ? null
-            : _cidadeController.text.trim(),
-        latitude: latitude,
-        longitude: longitude,
-        profundidadeMaxima: profundidade,
-        tipo: _tipo,
+        nivel: _nivel,
+        extended: {for (final f in _extFields) f.$1: clean(_ext[f.$1]!)},
       );
+
+      final site = _isEdit
+          ? await _api.update(widget.site!.id, input)
+          : await _api.create(input);
+
 
       if (!mounted) {
         return;
@@ -643,6 +680,23 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
               },
             ),
 
+            const SizedBox(height: 14),
+
+            DropdownButtonFormField<String>(
+              value: _nivel,
+              decoration: _decoration(
+                label: 'Nível de dificuldade',
+                icon: Icons.stairs_outlined,
+              ),
+              items: kNivelLabels.entries
+                  .map((e) => DropdownMenuItem<String>(
+                        value: e.key,
+                        child: Text(e.value),
+                      ))
+                  .toList(),
+              onChanged: (value) => setState(() => _nivel = value),
+            ),
+
             const SizedBox(height: 24),
 
             // ==================================================
@@ -853,6 +907,54 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
             ),
 
             const SizedBox(height: 30),
+
+            // ==================================================
+            // INFORMAÇÕES AVANÇADAS (PREMIUM)
+            // ==================================================
+
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Informações avançadas',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: DiverrTheme.gold.withOpacity(.16),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    'PREMIUM',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF9A6B00),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Só assinantes Premium veem estes campos (e todas as fotos do local). Usuários Free veem o resumo e 2 fotos.',
+              style: TextStyle(color: DiverrTheme.muted, fontSize: 13, height: 1.35),
+            ),
+            const SizedBox(height: 14),
+            for (final f in _extFields) ...[
+              TextFormField(
+                controller: _ext[f.$1],
+                minLines: f.$4,
+                maxLines: f.$4 == 1 ? 1 : 6,
+                maxLength: f.$4 == 1 ? 200 : 2000,
+                decoration: _decoration(label: f.$2, hint: f.$3),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            const SizedBox(height: 20),
 
             // ==================================================
             // BOTÃO CRIAR

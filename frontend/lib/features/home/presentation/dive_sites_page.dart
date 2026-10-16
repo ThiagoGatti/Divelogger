@@ -74,7 +74,10 @@ class _DiveSitesPageState extends State<DiveSitesPage> {
     final site = await Navigator.of(context).push<DiveSiteModel>(
       MaterialPageRoute(builder: (_) => const CreateDiveSitePage()),
     );
-    if (site != null) AppEvents.notifyDiveSitesChanged();
+    if (site == null || !mounted) return;
+    AppEvents.notifyDiveSitesChanged();
+    // Abre o local recém-criado para já adicionar as fotos.
+    await _open(site);
   }
 
   Future<void> _open(DiveSiteModel site) async {

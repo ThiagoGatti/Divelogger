@@ -6,6 +6,9 @@ import com.log.diverr.diver.divesites.domain.DiveSiteModel;
 import com.log.diverr.diver.divesites.dtos.CreateDiveSiteDto;
 import com.log.diverr.diver.divesites.dtos.DiveSiteResponseDto;
 import com.log.diverr.diver.divesites.repository.DiveSiteRepository;
+import com.log.diverr.diver.plans.PlanService;
+import com.log.diverr.diver.reviews.DiveSiteReviewRepository;
+import com.log.diverr.diver.reviews.DiveSiteReviewService;
 import com.log.diverr.diver.storage.ImageStorageService;
 import com.log.diverr.diver.storage.PresignRequestDto;
 import com.log.diverr.diver.storage.PresignResponseDto;
@@ -15,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /** Regras de Dive Sites. Escrita é restrita a ADMIN no SecurityConfig; aqui ficam as regras de dados. */
@@ -27,33 +32,51 @@ public class DiveSiteService {
     private final DiveSiteRepository repository;
     private final UserRepository userRepository;
     private final ImageStorageService storage;
+    private final PlanService planService;
+    private final DiveSiteReviewRepository reviewRepository;
 
     public DiveSiteService(
             DiveSiteRepository repository,
             UserRepository userRepository,
-            ImageStorageService storage
+            ImageStorageService storage,
+            PlanService planService,
+            DiveSiteReviewRepository reviewRepository
     ) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.storage = storage;
+        this.planService = planService;
+        this.reviewRepository = reviewRepository;
     }
 
     /** Usuário comum só vê locais ativos. ADMIN pode pedir também os inativos. */
     @Transactional(readOnly = true)
-    public List<DiveSiteResponseDto> list(boolean includeInactive, boolean isAdmin) {
+    public List<DiveSiteResponseDto> list(boolean includeInactive, boolean isAdmin, Long userId) {
         List<DiveSiteModel> sites = (includeInactive && isAdmin)
                 ? repository.findAllByOrderByNomeAsc()
                 : repository.findByAtivoTrueOrderByNomeAsc();
-        return sites.stream().map(s -> DiveSiteResponseDto.from(s, storage)).toList();
+
+        DiveSiteResponseDto.Access access = accessFor(userId, isAdmin);
+
+        Map<UUID, DiveSiteReviewRepository.RatingRow> ratings = new HashMap<>();
+        reviewRepository.aggregateAll().forEach(r -> ratings.put(r.getSiteId(), r));
+
+        return sites.stream().map(s -> {
+            var r = ratings.get(s.getId());
+            return DiveSiteResponseDto.from(
+                    s, storage, access,
+                    r == null ? null : DiveSiteReviewService.round1(r.getAverage()),
+                    r == null || r.getTotal() == null ? 0L : r.getTotal());
+        }).toList();
     }
 
     @Transactional(readOnly = true)
-    public DiveSiteResponseDto get(UUID id, boolean isAdmin) {
+    public DiveSiteResponseDto get(UUID id, boolean isAdmin, Long userId) {
         DiveSiteModel site = find(id);
         if (!site.isAtivo() && !isAdmin) {
             throw ApiException.notFound("Dive site não encontrado");
         }
-        return DiveSiteResponseDto.from(site, storage);
+        return toDto(site, accessFor(userId, isAdmin));
     }
 
     @Transactional
@@ -64,14 +87,14 @@ public class DiveSiteService {
         DiveSiteModel site = new DiveSiteModel();
         apply(site, dto);
         site.setCreatedBy(user);
-        return DiveSiteResponseDto.from(repository.save(site), storage);
+        return toDto(repository.save(site), DiveSiteResponseDto.Access.admin());
     }
 
     @Transactional
     public DiveSiteResponseDto update(UUID id, CreateDiveSiteDto dto) {
         DiveSiteModel site = find(id);
         apply(site, dto);
-        return DiveSiteResponseDto.from(repository.save(site), storage);
+        return toDto(repository.save(site), DiveSiteResponseDto.Access.admin());
     }
 
     @Transactional
@@ -79,7 +102,7 @@ public class DiveSiteService {
         DiveSiteModel site = find(id);
         site.setAtivo(ativo);
         site.setUpdatedAt(LocalDateTime.now());
-        return DiveSiteResponseDto.from(repository.save(site), storage);
+        return toDto(repository.save(site), DiveSiteResponseDto.Access.admin());
     }
 
     // ---------------- imagens (ADMIN) ----------------
@@ -105,7 +128,7 @@ public class DiveSiteService {
             throw ApiException.badRequest("Limite de " + MAX_IMAGES_PER_SITE + " fotos por Dive Site");
         }
         if (site.getImages().stream().anyMatch(i -> i.getStorageKey().equals(key))) {
-            return DiveSiteResponseDto.from(site, storage);
+            return toDto(site, DiveSiteResponseDto.Access.admin());
         }
 
         storage.assertUploaded(key);
@@ -115,7 +138,7 @@ public class DiveSiteService {
         image.setStorageKey(key);
         site.getImages().add(image);
 
-        return DiveSiteResponseDto.from(repository.saveAndFlush(site), storage);
+        return toDto(repository.saveAndFlush(site), DiveSiteResponseDto.Access.admin());
     }
 
     @Transactional
@@ -129,10 +152,29 @@ public class DiveSiteService {
         site.getImages().remove(image);
         DiveSiteModel saved = repository.saveAndFlush(site);
         storage.delete(image.getStorageKey());
-        return DiveSiteResponseDto.from(saved, storage);
+        return toDto(saved, DiveSiteResponseDto.Access.admin());
     }
 
     // ---------------- util ----------------
+
+    private DiveSiteResponseDto.Access accessFor(Long userId, boolean isAdmin) {
+        if (isAdmin) {
+            return DiveSiteResponseDto.Access.admin();
+        }
+        UserModel user = userRepository.findById(userId)
+                .orElseThrow(() -> ApiException.unauthorized("Usuário não encontrado"));
+        return new DiveSiteResponseDto.Access(
+                planService.canSeeExtendedSiteInfo(user),
+                planService.maxSitePhotosVisible(user));
+    }
+
+    private DiveSiteResponseDto toDto(DiveSiteModel site, DiveSiteResponseDto.Access access) {
+        var rating = reviewRepository.aggregateFor(site.getId());
+        return DiveSiteResponseDto.from(
+                site, storage, access,
+                rating.map(r -> DiveSiteReviewService.round1(r.getAverage())).orElse(null),
+                rating.map(r -> r.getTotal() == null ? 0L : r.getTotal()).orElse(0L));
+    }
 
     private DiveSiteModel find(UUID id) {
         return repository.findById(id)
@@ -153,6 +195,17 @@ public class DiveSiteService {
         site.setLongitude(dto.longitude());
         site.setProfundidadeMaxima(dto.profundidadeMaxima());
         site.setTipo(dto.tipo());
+        site.setNivel(dto.nivel());
+        site.setMelhorEpoca(blankToNull(dto.melhorEpoca()));
+        site.setVisibilidadeTipica(blankToNull(dto.visibilidadeTipica()));
+        site.setTemperaturaAgua(blankToNull(dto.temperaturaAgua()));
+        site.setCorrenteTipica(blankToNull(dto.correnteTipica()));
+        site.setCertificacaoMinima(blankToNull(dto.certificacaoMinima()));
+        site.setFaunaFlora(blankToNull(dto.faunaFlora()));
+        site.setComoChegar(blankToNull(dto.comoChegar()));
+        site.setInfraestrutura(blankToNull(dto.infraestrutura()));
+        site.setDicas(blankToNull(dto.dicas()));
+        site.setAvisosSeguranca(blankToNull(dto.avisosSeguranca()));
         site.setUpdatedAt(LocalDateTime.now());
     }
 

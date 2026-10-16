@@ -1,3 +1,10 @@
+/// Quem pode ver os mergulhos do usuário.
+const Map<String, String> kVisibilityLabels = {
+  'PRIVATE': 'Somente eu',
+  'FOLLOWERS': 'Meus seguidores',
+  'PUBLIC': 'Qualquer usuário',
+};
+
 class UserModel {
   final int id;
   final String nomeCompleto;
@@ -8,6 +15,9 @@ class UserModel {
   final String plano;
   final String role;
   final String? planExpiresAt;
+  final String? username;
+  final String? bio;
+  final String diveVisibility; // PRIVATE | FOLLOWERS | PUBLIC
 
   const UserModel({
     required this.id,
@@ -19,6 +29,9 @@ class UserModel {
     required this.plano,
     this.role = 'USER',
     this.planExpiresAt,
+    this.username,
+    this.bio,
+    this.diveVisibility = 'FOLLOWERS',
   });
 
   bool get isAdmin => role == 'ADMIN';
@@ -33,6 +46,9 @@ class UserModel {
         plano: json['plano'] as String? ?? 'FREE',
         role: json['role'] as String? ?? 'USER',
         planExpiresAt: json['planExpiresAt'] as String?,
+        username: json['username'] as String?,
+        bio: json['bio'] as String?,
+        diveVisibility: json['diveVisibility'] as String? ?? 'FOLLOWERS',
       );
 
   Map<String, dynamic> toJson() => {
@@ -45,5 +61,8 @@ class UserModel {
         'plano': plano,
         'role': role,
         'planExpiresAt': planExpiresAt,
+        'username': username,
+        'bio': bio,
+        'diveVisibility': diveVisibility,
       };
 }

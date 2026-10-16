@@ -13,13 +13,16 @@ public class UserUsecases {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final UsernameGenerator usernameGenerator;
 
     public UserUsecases(
             UserRepository userRepository,
-            BCryptPasswordEncoder passwordEncoder
+            BCryptPasswordEncoder passwordEncoder,
+            UsernameGenerator usernameGenerator
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.usernameGenerator = usernameGenerator;
     }
 
     public UserResponseDto execute(CreateUserDto dto) {
@@ -38,6 +41,7 @@ public class UserUsecases {
         UserModel user = new UserModel();
         user.setRole(Role.USER);
         user.setNomeCompleto(dto.nomeCompleto());
+        user.setUsername(usernameGenerator.generate(dto.nomeCompleto()));
         user.setEmail(email);
         user.setTelefone(dto.telefone());
         user.setSenha(passwordEncoder.encode(dto.senha()));

@@ -45,6 +45,41 @@ public class DiveSiteModel {
     @Enumerated(EnumType.STRING)
     private TipoDiveSite tipo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private NivelDificuldade nivel;
+
+    // ---- Informações avançadas (visíveis para Premium e ADMIN) ----
+    @Column(length = 200)
+    private String melhorEpoca;
+
+    @Column(length = 200)
+    private String visibilidadeTipica;
+
+    @Column(length = 200)
+    private String temperaturaAgua;
+
+    @Column(length = 200)
+    private String correnteTipica;
+
+    @Column(length = 200)
+    private String certificacaoMinima;
+
+    @Column(length = 2000)
+    private String faunaFlora;
+
+    @Column(length = 2000)
+    private String comoChegar;
+
+    @Column(length = 2000)
+    private String infraestrutura;
+
+    @Column(length = 2000)
+    private String dicas;
+
+    @Column(length = 2000)
+    private String avisosSeguranca;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
     private UserModel createdBy;
@@ -67,6 +102,24 @@ public class DiveSiteModel {
     public DiveSiteModel() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public boolean hasExtendedInfo() {
+        return notBlank(melhorEpoca) || notBlank(visibilidadeTipica) || notBlank(temperaturaAgua)
+                || notBlank(correnteTipica) || notBlank(certificacaoMinima) || notBlank(faunaFlora)
+                || notBlank(comoChegar) || notBlank(infraestrutura) || notBlank(dicas)
+                || notBlank(avisosSeguranca);
+    }
+
+    private static boolean notBlank(String v) {
+        return v != null && !v.isBlank();
+    }
+
+    public enum NivelDificuldade {
+        INICIANTE,
+        INTERMEDIARIO,
+        AVANCADO,
+        TECNICO
     }
 
     public enum TipoDiveSite {

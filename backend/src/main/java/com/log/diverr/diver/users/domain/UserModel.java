@@ -54,6 +54,22 @@ public class UserModel {
         private LocalDateTime resetPasswordTokenExpiresAt;
         private String profileImageUrl;
 
+        /** Identificador público (@usuario). Único; gerado automaticamente no cadastro. */
+        @Column(unique = true, length = 30)
+        private String username;
+
+        @Column(length = 300)
+        private String bio;
+
+        /** Quem pode ver os mergulhos. Linhas antigas (null) valem FOLLOWERS. */
+        @Enumerated(EnumType.STRING)
+        @Column(length = 20)
+        private DiveVisibility diveVisibility = DiveVisibility.FOLLOWERS;
+
+        public DiveVisibility getDiveVisibility() {
+            return diveVisibility == null ? DiveVisibility.FOLLOWERS : diveVisibility;
+        }
+
         public enum Plano {
             FREE, PREMIUM,
         }

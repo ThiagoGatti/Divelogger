@@ -69,8 +69,6 @@ public class DiveLogService {
         UserModel user = userRepository.findById(userId)
                 .orElseThrow(() -> ApiException.unauthorized("Usuário não encontrado"));
 
-        planService.assertCanCreateDiveLog(user, diveLogRepository.countByUserId(userId));
-
         DiveSiteModel site = activeSite(dto.diveSiteId());
         validateRules(dto);
 
