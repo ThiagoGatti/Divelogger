@@ -199,43 +199,28 @@ class _ListsTabState extends State<ListsTab> {
               for (final l in _lists)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Card(
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () => _open(l),
-                      child: SizedBox(
-                        height: 86,
-                        child: Row(
+                  child: ImageSideCard(
+                    imageUrl: l.coverUrl,
+                    cacheKey: l.coverImageId,
+                    placeholderIcon: Icons.format_list_numbered,
+                    imageWidth: 86,
+                    minHeight: 86,
+                    onTap: () => _open(l),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l.nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
                           children: [
-                            SizedBox(
-                              width: 86,
-                              height: 86,
-                              child: RemoteImage(url: l.coverUrl, cacheKey: l.coverImageId, placeholderIcon: Icons.format_list_numbered),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 14),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(l.nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                                    const SizedBox(height: 6),
-                                    Wrap(
-                                      spacing: 6,
-                                      children: [
-                                        InfoChip(text: '${l.itemsCount} ${l.itemsCount == 1 ? 'local' : 'locais'}'),
-                                        if (l.ranked) const InfoChip(icon: Icons.format_list_numbered, text: 'Ranqueada', color: DiverrTheme.gold),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const Padding(padding: EdgeInsets.only(right: 8), child: Icon(Icons.chevron_right, color: DiverrTheme.muted)),
+                            InfoChip(text: '${l.itemsCount} ${l.itemsCount == 1 ? 'local' : 'locais'}'),
+                            if (l.ranked) const InfoChip(icon: Icons.format_list_numbered, text: 'Ranqueada', color: DiverrTheme.gold),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),

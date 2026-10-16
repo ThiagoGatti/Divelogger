@@ -174,13 +174,15 @@ class StatsTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GridView.count(
-          crossAxisCount: 2,
+        GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.35,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: 128,
+          ),
           children: [
             StatCard(icon: Icons.swap_vert, value: formatMeters(_avg(_nums((l) => l.profundidadeMaxima))), label: 'Prof. média'),
             StatCard(icon: Icons.hourglass_bottom, value: formatDuration(_longest), label: 'Mergulho mais longo'),
@@ -253,14 +255,16 @@ class StatsTab extends StatelessWidget {
               message: 'Registre seus mergulhos para ver estatísticas e acompanhar sua evolução.',
             )
           else ...[
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.35,
-              children: [
+            GridView(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            mainAxisExtent: 128,
+          ),
+          children: [
                 StatCard(icon: Icons.scuba_diving, value: '${logs.length}', label: 'Mergulhos'),
                 StatCard(icon: Icons.timer_outlined, value: formatDuration(_totalMinutes), label: 'Tempo submerso'),
                 StatCard(icon: Icons.arrow_downward, value: formatMeters(_max(_nums((l) => l.profundidadeMaxima))), label: 'Prof. máxima'),

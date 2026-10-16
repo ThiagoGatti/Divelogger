@@ -385,7 +385,7 @@ class _MapPageState extends State<MapPage> {
   Widget _countryCarousel() {
     final sites = _visibleSites;
     return SizedBox(
-      height: 112,
+      height: 132,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
@@ -393,49 +393,41 @@ class _MapPageState extends State<MapPage> {
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, i) {
           final s = sites[i];
-          return GestureDetector(
-            onTap: () => _focusSite(s),
-            child: Container(
-              width: 250,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(DiverrTheme.radius),
-                boxShadow: DiverrTheme.softShadow,
-                border: s.id == _selectedSiteId ? Border.all(color: DiverrTheme.primary, width: 2) : null,
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Row(
+          return SizedBox(
+            width: 270,
+            child: ImageSideCard(
+              imageUrl: s.coverUrl,
+              cacheKey: s.images.isEmpty ? null : s.images.first.id,
+              placeholderIcon: Icons.location_on,
+              imageWidth: 90,
+              minHeight: 112,
+              showChevron: false,
+              onTap: () => _focusSite(s),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  RemoteImage(
-                    url: s.coverUrl,
-                    cacheKey: s.images.isEmpty ? null : s.images.first.id,
-                    width: 86,
-                    height: 112,
-                    placeholderIcon: Icons.location_on,
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(s.nome, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
-                          const SizedBox(height: 4),
-                          Text(
-                            s.cidade ?? s.pais,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5),
-                          ),
-                          if (s.ratingAverage != null) ...[
-                            const SizedBox(height: 6),
-                            InfoChip(icon: Icons.star_rounded, text: s.ratingAverage!.toStringAsFixed(1), color: DiverrTheme.gold),
-                          ],
-                        ],
-                      ),
+                  Text(
+                    s.nome,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      color: s.id == _selectedSiteId ? DiverrTheme.primary : DiverrTheme.dark,
                     ),
                   ),
+                  const SizedBox(height: 4),
+                  Text(
+                    s.cidade ?? s.pais,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5),
+                  ),
+                  if (s.ratingAverage != null) ...[
+                    const SizedBox(height: 6),
+                    InfoChip(icon: Icons.star_rounded, text: s.ratingAverage!.toStringAsFixed(1), color: DiverrTheme.gold),
+                  ],
                 ],
               ),
             ),

@@ -35,9 +35,6 @@ class Entitlements {
 
   bool get isPremium => plano == 'PREMIUM';
 
-  /// Mergulhos são ilimitados em todos os planos.
-  bool get canCreateDiveLog => maxDiveLogs == null || diveLogsUsed < maxDiveLogs!;
-
   factory Entitlements.fromJson(Map<String, dynamic> json) => Entitlements(
         plano: json['plano']?.toString() ?? 'FREE',
         maxDiveLogs: (json['maxDiveLogs'] as num?)?.toInt(),

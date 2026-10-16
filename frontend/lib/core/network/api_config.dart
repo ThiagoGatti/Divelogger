@@ -30,13 +30,33 @@ class ApiConfig {
 
     final url = raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
 
+    // O APK/AAB precisa receber a URL na hora de gerar:
+    //   flutter build apk --dart-define-from-file=env/prod.json
+    // (o menu "Build APK" do Android Studio NÃO passa esse argumento).
+    if (url.contains('SEU-DOMINIO')) {
+      throw StateError(
+        'Este app foi gerado sem a URL do servidor. Gere o APK pelo terminal com '
+        '--dart-define-from-file=env/prod.json (ou env/aws-http.json para um APK de teste --debug).',
+      );
+    }
+
     // Em release nunca aceitamos HTTP (assert é removido em release, por isso o throw).
     if (kReleaseMode && !url.startsWith('https://')) {
       throw StateError(
-        'Build de release exige API em HTTPS. Configure env/prod.json com a URL https.',
+        'Build de release exige servidor HTTPS. Use env/prod.json com uma URL https, '
+        'ou gere um APK de teste com --debug --dart-define-from-file=env/aws-http.json.',
       );
     }
     return url;
+  }
+
+  /// Só o host (para mostrar na mensagem de erro de conexão e facilitar o diagnóstico).
+  static String get host {
+    try {
+      return Uri.parse(baseUrl).host;
+    } catch (_) {
+      return 'servidor';
+    }
   }
 
   static String get _debugDefault {

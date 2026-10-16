@@ -306,13 +306,15 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        GridView.count(
-                          crossAxisCount: 2,
+                        GridView(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          mainAxisSpacing: 10,
-                          crossAxisSpacing: 10,
-                          childAspectRatio: 2.5,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                            mainAxisExtent: 74,
+                          ),
                           children: [
                             _tile(Icons.timer_outlined, 'Duração', formatDuration(l.duracaoMinutos)),
                             _tile(Icons.arrow_downward, 'Prof. máxima', formatMeters(l.profundidadeMaxima)),

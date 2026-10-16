@@ -593,3 +593,80 @@ class LoadingButton extends StatelessWidget {
     );
   }
 }
+
+/// Cartão com miniatura à esquerda cuja altura se ADAPTA ao conteúdo (mínimo [minHeight]).
+/// Substitui os cartões de altura fixa, que estouravam por alguns pixels com fontes maiores.
+class ImageSideCard extends StatelessWidget {
+  final String? imageUrl;
+  final String? cacheKey;
+  final IconData placeholderIcon;
+  final double imageWidth;
+  final double minHeight;
+  final VoidCallback? onTap;
+  final Widget child;
+  final bool showChevron;
+
+  const ImageSideCard({
+    super.key,
+    required this.imageUrl,
+    this.cacheKey,
+    this.placeholderIcon = Icons.image_outlined,
+    this.imageWidth = 104,
+    this.minHeight = 104,
+    this.onTap,
+    required this.child,
+    this.showChevron = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(DiverrTheme.radius),
+        boxShadow: DiverrTheme.softShadow,
+      ),
+      child: Card(
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: imageWidth,
+                child: RemoteImage(
+                  url: imageUrl,
+                  cacheKey: cacheKey,
+                  placeholderIcon: placeholderIcon,
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(left: imageWidth),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: minHeight),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+                          child: child,
+                        ),
+                      ),
+                      if (showChevron)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 8),
+                          child: Icon(Icons.chevron_right, color: DiverrTheme.muted),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

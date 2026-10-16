@@ -1,6 +1,7 @@
 /// Quem pode ver os mergulhos do usuário.
 const Map<String, String> kVisibilityLabels = {
   'PRIVATE': 'Somente eu',
+  'FRIENDS': 'Meus amigos',
   'FOLLOWERS': 'Meus seguidores',
   'PUBLIC': 'Qualquer usuário',
 };

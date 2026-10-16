@@ -23,14 +23,7 @@ Future<bool> openDiveLogForm(
   DiveLogModel? existing,
   DiveSiteModel? site,
 }) async {
-  final ent = AppSession.instance.entitlements;
-  if (existing == null && !ent.canCreateDiveLog) {
-    await showUpgradeSheet(
-      context,
-      message: 'Você atingiu o limite de ${ent.maxDiveLogs} mergulhos do plano Free.',
-    );
-    return false;
-  }
+  // Mergulhos são ilimitados em todos os planos: não há checagem de limite aqui.
   final result = await Navigator.of(context).push<bool>(
     MaterialPageRoute(
       builder: (_) => DiveLogFormPage(existing: existing, initialSite: site),

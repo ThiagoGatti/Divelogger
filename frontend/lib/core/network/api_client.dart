@@ -31,7 +31,14 @@ class ApiClient {
 
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
-  Uri _uri(String path) => Uri.parse('${ApiConfig.baseUrl}$path');
+  Uri _uri(String path) {
+    try {
+      return Uri.parse('${ApiConfig.baseUrl}$path');
+    } on StateError catch (e) {
+      // Build sem URL do servidor / release com HTTP: mostra a causa real em vez de "sem conexão".
+      throw ApiException(e.message);
+    }
+  }
 
   Map<String, String> _headers({required bool auth}) {
     final headers = <String, String>{
@@ -105,7 +112,7 @@ class ApiClient {
     } on TimeoutException {
       throw ApiException('O servidor demorou para responder. Tente novamente.');
     } on http.ClientException {
-      throw ApiException('Sem conexão com o servidor. Verifique sua internet.');
+      throw ApiException('Sem conexão com o servidor (${ApiConfig.host}). Verifique sua internet.');
     }
 
     dynamic decoded;

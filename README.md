@@ -80,6 +80,35 @@ flutter run --dart-define-from-file=env/prod.json
 flutter build appbundle --dart-define-from-file=env/prod.json
 ```
 
+## Testar no celular (Android)
+
+A URL do servidor é definida **na hora de gerar o app**, com `--dart-define-from-file`.
+O menu *Build > Flutter > Build APK* do Android Studio **não** passa esse argumento: o APK sai sem a URL e o login
+mostra "Sem conexão com o servidor (host)". Gere pelo terminal:
+
+```powershell
+cd frontend
+# APK de teste (debug) -> backend na AWS por HTTP (só para testes!)
+powershell -ExecutionPolicy Bypass -File .\scripts\apk-teste.ps1
+# APK de release -> exige HTTPS (env/prod.json)
+powershell -ExecutionPolicy Bypass -File .\scripts\apk-release.ps1
+```
+
+| Build | URL usada | HTTP permitido? |
+|---|---|---|
+| `flutter run` / `--debug` com `env/aws-http.json` | a do arquivo | sim (só no debug) |
+| `--release` com `env/prod.json` | a do arquivo (**https**) | **não** |
+| sem `--dart-define` | placeholder / `10.0.2.2` (emulador) | — o app avisa que falta a URL |
+
+### HTTPS sem domínio próprio (CloudFront)
+
+Para ter uma URL https rapidamente (sem comprar domínio): CloudFront → *Create distribution* →
+origem = `divelog-env.eba-p82cgkkx.sa-east-1.elasticbeanstalk.com`, protocolo de origem **HTTP only**,
+*Viewer protocol policy* = Redirect HTTP to HTTPS, métodos permitidos = **GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE**,
+*Cache policy* = **CachingDisabled**, *Origin request policy* = **AllViewer**.
+Quando ficar *Deployed*, use `https://dxxxxxxxx.cloudfront.net` em `env/prod.json` e em `ApiConfig.productionUrl`.
+(Os nomes das opções podem variar um pouco no console.) Para a loja, o ideal continua sendo um domínio próprio + ACM + ALB.
+
 ## Imagens (Amazon S3)
 
 As fotos ficam em um bucket S3 **privado**. O app nunca recebe credenciais: o backend gera URLs pré-assinadas
@@ -128,7 +157,15 @@ As informações avançadas e as fotos extras dos locais **nem saem do servidor*
 (`extended` vem nulo e `extendedLocked` avisa o app). PREMIUM com `plan_expires_at` vencido vale como FREE.
 Limites de fotos retornam HTTP 403 com `code: PLAN_LIMIT`. ADMIN enxerga tudo.
 
-Privacidade dos mergulhos (`diveVisibility`): `PRIVATE`, `FOLLOWERS` (padrão) ou `PUBLIC`.
+Privacidade dos mergulhos (`diveVisibility`):
+
+| Valor | Quem vê |
+|---|---|
+| `PRIVATE` | só o próprio usuário |
+| `FRIENDS` | quem ele segue **e** que também o segue de volta (amigo = seguimento mútuo) |
+| `FOLLOWERS` (padrão) | qualquer pessoa que o segue (seguir é imediato, como no Letterboxd / Last.fm) |
+| `PUBLIC` | qualquer usuário do app |
+
 A regra é gravada hoje e passa a ser aplicada quando o módulo de seguidores for entregue.
 
 ## Endpoints principais

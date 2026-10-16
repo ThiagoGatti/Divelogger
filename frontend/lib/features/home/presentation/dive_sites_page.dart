@@ -198,76 +198,52 @@ class _SiteCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Opacity(
       opacity: site.ativo ? 1 : .6,
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(DiverrTheme.radius),
-          boxShadow: DiverrTheme.softShadow,
-        ),
-        child: Card(
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: SizedBox(
-              height: 104,
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 104,
-                    height: 104,
-                    child: RemoteImage(
-                      url: site.coverUrl,
-                      cacheKey: site.images.isEmpty ? null : site.images.first.id,
-                      placeholderIcon: Icons.location_on,
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            site.nome,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            site.localizacao.isEmpty ? '—' : site.localizacao,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              if (site.tipo != null) InfoChip(text: tipoLabel(site.tipo)),
-                              if (site.profundidadeMaxima != null)
-                                InfoChip(
-                                  icon: Icons.arrow_downward,
-                                  text: '${site.profundidadeMaxima!.toStringAsFixed(0)} m',
-                                  color: DiverrTheme.secondary,
-                                ),
-                              if (!site.ativo)
-                                const InfoChip(icon: Icons.block, text: 'Desativado', color: DiverrTheme.danger),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.only(right: 8),
-                    child: Icon(Icons.chevron_right, color: DiverrTheme.muted),
-                  ),
-                ],
-              ),
+      child: ImageSideCard(
+        imageUrl: site.coverUrl,
+        cacheKey: site.images.isEmpty ? null : site.images.first.id,
+        placeholderIcon: Icons.location_on,
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              site.nome,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
             ),
-          ),
+            const SizedBox(height: 3),
+            Text(
+              site.localizacao.isEmpty ? '—' : site.localizacao,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (site.tipo != null) InfoChip(text: tipoLabel(site.tipo)),
+                if (site.profundidadeMaxima != null)
+                  InfoChip(
+                    icon: Icons.arrow_downward,
+                    text: '${site.profundidadeMaxima!.toStringAsFixed(0)} m',
+                    color: DiverrTheme.secondary,
+                  ),
+                if (site.ratingAverage != null)
+                  InfoChip(
+                    icon: Icons.star_rounded,
+                    text: site.ratingAverage!.toStringAsFixed(1),
+                    color: DiverrTheme.gold,
+                  ),
+                if (!site.ativo)
+                  const InfoChip(icon: Icons.block, text: 'Desativado', color: DiverrTheme.danger),
+              ],
+            ),
+          ],
         ),
       ),
     );
