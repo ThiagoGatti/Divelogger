@@ -15,4 +15,11 @@ public interface DiveLogRepository extends JpaRepository<DiveLogModel, UUID> {
     List<DiveLogModel> findByDiveSiteIdAndUserIdOrderByDataHoraDesc(UUID diveSiteId, Long userId);
 
     long countByUserId(Long userId);
+
+    List<DiveLogModel> findByAvaliacaoIsNotNullAndNotaExperienciaIsNull();
+
+    org.springframework.data.domain.Page<DiveLogModel> findByUserIdIn(
+            java.util.Collection<Long> userIds,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

@@ -31,8 +31,12 @@ public class DiveSiteReviewModel {
     @JoinColumn(name = "user_id", nullable = false)
     private UserModel user;
 
+    /** Legado (1..5 inteiro, NOT NULL). Mantido preenchido; a nota real é [score]. */
     @Column(nullable = false)
     private int rating;
+
+    /** Nota de 0,5 a 5 (meia estrela). */
+    private Double score;
 
     @Column(length = 2000)
     private String texto;

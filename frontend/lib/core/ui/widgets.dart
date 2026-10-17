@@ -451,32 +451,68 @@ class PlanBadge extends StatelessWidget {
   }
 }
 
+/// Estrelas de 0,5 a 5, em passos de meia estrela.
+/// Somente leitura quando [onChanged] é null; senão, toque ou arraste para avaliar
+/// (tocar de novo na mesma nota limpa a avaliação).
 class RatingStars extends StatelessWidget {
-  final int value; // 0..5
+  final double value; // 0..5 (aceita .5)
   final double size;
-  final ValueChanged<int>? onChanged;
+  final ValueChanged<double>? onChanged;
 
   const RatingStars({super.key, required this.value, this.size = 18, this.onChanged});
 
+  IconData _iconFor(int i) {
+    if (value >= i + 1) return Icons.star_rounded;
+    if (value >= i + 0.5) return Icons.star_half_rounded;
+    return Icons.star_outline_rounded;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final interactive = onChanged != null;
+    final gap = interactive ? 4.0 : 0.0;
+    final step = size + gap;
+
+    final row = Row(
       mainAxisSize: MainAxisSize.min,
-      children: List.generate(5, (i) {
-        final filled = i < value;
-        final icon = Icon(
-          filled ? Icons.star_rounded : Icons.star_outline_rounded,
-          size: size,
-          color: filled ? DiverrTheme.gold : Colors.grey.shade400,
-        );
-        if (onChanged == null) return icon;
-        return GestureDetector(
-          onTap: () => onChanged!(value == i + 1 ? 0 : i + 1),
-          child: Padding(padding: const EdgeInsets.only(right: 4), child: icon),
-        );
-      }),
+      children: [
+        for (var i = 0; i < 5; i++)
+          Padding(
+            padding: EdgeInsets.only(right: i < 4 ? gap : 0),
+            child: Icon(
+              _iconFor(i),
+              size: size,
+              color: value >= i + 0.5 ? DiverrTheme.gold : Colors.grey.shade400,
+            ),
+          ),
+      ],
+    );
+
+    if (!interactive) return row;
+
+    double fromDx(double dx) {
+      final raw = (dx / step).clamp(0.0, 5.0);
+      final v = (raw * 2).ceil() / 2;
+      return v.clamp(0.5, 5.0);
+    }
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: (d) {
+        final v = fromDx(d.localPosition.dx);
+        onChanged!(v == value ? 0 : v);
+      },
+      onHorizontalDragUpdate: (d) => onChanged!(fromDx(d.localPosition.dx)),
+      child: row,
     );
   }
+}
+
+/// Texto da nota: "4,5".
+String formatRating(double? v) {
+  if (v == null) return '—';
+  final text = v == v.truncateToDouble() ? v.toStringAsFixed(0) : v.toStringAsFixed(1);
+  return text.replaceAll('.', ',');
 }
 
 /// Imagem da rede com cache. As URLs do S3 mudam a cada resposta, então o cache usa o id da imagem.

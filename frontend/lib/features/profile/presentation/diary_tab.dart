@@ -153,8 +153,8 @@ class _DiaryRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      if ((log.avaliacao ?? 0) > 0) ...[
-                        RatingStars(value: log.avaliacao!, size: 14),
+                      if ((log.notaExperiencia ?? 0) > 0) ...[
+                        RatingStars(value: log.notaExperiencia!, size: 14),
                         const SizedBox(width: 8),
                       ],
                       Flexible(

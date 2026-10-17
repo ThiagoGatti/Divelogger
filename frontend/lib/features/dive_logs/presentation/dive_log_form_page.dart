@@ -71,7 +71,9 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
   String? _agua;
   String? _entrada;
   String? _gas;
-  int _rating = 0;
+  double _notaExp = 0; // minha experiência (0 = sem nota)
+  double _notaLocal = 0; // nota do local (vira a avaliação do Dive Site)
+  final _comentarioLocal = TextEditingController();
 
   List<ImageRef> _existingImages = [];
   final List<_PickedImage> _newImages = [];
@@ -101,7 +103,9 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
       _agua = e.tipoAgua;
       _entrada = e.tipoEntrada;
       _gas = e.tipoGas;
-      _rating = e.avaliacao ?? 0;
+      _notaExp = e.notaExperiencia ?? 0;
+      _notaLocal = e.notaLocal ?? 0;
+      _comentarioLocal.text = e.comentarioLocal ?? '';
       _existingImages = List.of(e.imagens);
     } else {
       _dateTime = DateTime.now();
@@ -112,7 +116,7 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
 
   @override
   void dispose() {
-    for (final c in [_duracao, _profMax, _profMedia, _visib, _temp, _pIni, _pFim, _obs]) {
+    for (final c in [_duracao, _profMax, _profMedia, _visib, _temp, _pIni, _pFim, _obs, _comentarioLocal]) {
       c.dispose();
     }
     super.dispose();
@@ -258,7 +262,9 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
         'tipoGas': _gas,
         'pressaoInicial': parseInt(_pIni.text),
         'pressaoFinal': parseInt(_pFim.text),
-        'avaliacao': _rating == 0 ? null : _rating,
+        'notaExperiencia': _notaExp == 0 ? null : _notaExp,
+        'notaLocal': _notaLocal == 0 ? null : _notaLocal,
+        'comentarioLocal': _comentarioLocal.text.trim().isEmpty ? null : _comentarioLocal.text.trim(),
         'observacoes': _obs.text.trim().isEmpty ? null : _obs.text.trim(),
       };
 
@@ -266,6 +272,10 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
     if (!_formKey.currentState!.validate()) return;
     if (_siteId == null) {
       showSnack(context, 'Selecione o Dive Site do mergulho.', error: true);
+      return;
+    }
+    if (_comentarioLocal.text.trim().isNotEmpty && _notaLocal == 0) {
+      showSnack(context, 'Dê uma nota ao local para publicar o comentário.', error: true);
       return;
     }
 
@@ -507,11 +517,63 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
                     ],
                   ),
                 ]),
-                _section('Avaliação e anotações', [
-                  const Text('Como foi o mergulho?', style: TextStyle(color: DiverrTheme.muted, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 8),
-                  RatingStars(value: _rating, size: 36, onChanged: (v) => setState(() => _rating = v)),
-                  const SizedBox(height: 16),
+                _section('Avaliações', [
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text('Local do mergulho', style: TextStyle(fontWeight: FontWeight.w800)),
+                      ),
+                      Text(
+                        _notaLocal == 0 ? 'sem nota' : formatRating(_notaLocal),
+                        style: const TextStyle(fontWeight: FontWeight.w900, color: DiverrTheme.gold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Esta nota e o comentário viram a sua avaliação do Dive Site: aparecem na página do local, '
+                    'que mostra a média de todos os mergulhadores.',
+                    style: TextStyle(color: DiverrTheme.muted, fontSize: 12.5, height: 1.35),
+                  ),
+                  const SizedBox(height: 10),
+                  RatingStars(value: _notaLocal, size: 34, onChanged: (v) => setState(() => _notaLocal = v)),
+                  const SizedBox(height: 4),
+                  const Text('Toque ou arraste (meia estrela). Toque na mesma nota para limpar.',
+                      style: TextStyle(color: DiverrTheme.muted, fontSize: 11.5)),
+                  if (_notaLocal > 0) ...[
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _comentarioLocal,
+                      maxLines: 3,
+                      maxLength: 2000,
+                      decoration: const InputDecoration(
+                        labelText: 'Comentário sobre o local (opcional)',
+                        alignLabelWithHint: true,
+                        hintText: 'Como é mergulhar aqui? Dicas para quem for.',
+                      ),
+                    ),
+                  ],
+                  const Divider(height: 28),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text('Minha experiência', style: TextStyle(fontWeight: FontWeight.w800)),
+                      ),
+                      Text(
+                        _notaExp == 0 ? 'sem nota' : formatRating(_notaExp),
+                        style: const TextStyle(fontWeight: FontWeight.w900, color: DiverrTheme.gold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'O quanto este mergulho foi bom para você. Não altera a nota do local.',
+                    style: TextStyle(color: DiverrTheme.muted, fontSize: 12.5, height: 1.35),
+                  ),
+                  const SizedBox(height: 10),
+                  RatingStars(value: _notaExp, size: 34, onChanged: (v) => setState(() => _notaExp = v)),
+                ]),
+                _section('Anotações', [
                   TextFormField(
                     controller: _obs,
                     maxLines: 4,

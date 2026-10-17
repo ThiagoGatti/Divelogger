@@ -1,6 +1,5 @@
 package com.log.diverr.diver.divelogs;
 
-import com.log.diverr.diver.common.ApiException;
 import com.log.diverr.diver.common.CurrentUser;
 import com.log.diverr.diver.divelogs.dtos.CreateDiveLogDto;
 import com.log.diverr.diver.divelogs.dtos.DiveLogResponseDto;
@@ -50,7 +49,7 @@ public class DiveLogController {
             @PathVariable UUID id,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        return ResponseEntity.ok(service.get(id, CurrentUser.id(jwt), CurrentUser.isAdmin(jwt)));
+        return ResponseEntity.ok(service.get(id, CurrentUser.id(jwt)));
     }
 
     @PutMapping("/{id}")
@@ -68,16 +67,13 @@ public class DiveLogController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Compatibilidade: só o próprio usuário (ou admin) pode listar por userId. */
+    /** Mergulhos de um usuário: o próprio ou, se a privacidade dele permitir, de outra pessoa. */
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<DiveLogResponseDto>> findByUser(
             @PathVariable Long userId,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        if (!userId.equals(CurrentUser.id(jwt)) && !CurrentUser.isAdmin(jwt)) {
-            throw ApiException.forbidden("Você não tem permissão para ver estes mergulhos");
-        }
-        return ResponseEntity.ok(service.listMine(userId));
+        return ResponseEntity.ok(service.listOfUser(userId, CurrentUser.id(jwt)));
     }
 
     /** Meus mergulhos em um Dive Site. */

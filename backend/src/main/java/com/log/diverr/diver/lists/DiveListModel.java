@@ -12,7 +12,8 @@ import java.util.UUID;
 
 /**
  * Lista de Dive Sites criada pelo usuário (ranqueada ou não).
- * Cada usuário também tem uma lista especial QUERO_MERGULHAR ("lista pro futuro").
+ * Cada usuário também tem listas especiais (criadas sob demanda): QUERO_MERGULHAR ("lista pro futuro"),
+ * JA_MERGULHEI (locais em que já mergulhou) e FAVORITOS (até 4 locais favoritos, exibidos no perfil).
  */
 @Getter
 @Setter
@@ -22,7 +23,9 @@ public class DiveListModel {
 
     public enum Tipo {
         LISTA,
-        QUERO_MERGULHAR
+        QUERO_MERGULHAR,
+        JA_MERGULHEI,
+        FAVORITOS
     }
 
     @Id

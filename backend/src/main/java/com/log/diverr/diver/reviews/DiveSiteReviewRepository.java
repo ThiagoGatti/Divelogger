@@ -16,6 +16,8 @@ public interface DiveSiteReviewRepository extends JpaRepository<DiveSiteReviewMo
 
     Optional<DiveSiteReviewModel> findByDiveSiteIdAndUserId(UUID diveSiteId, Long userId);
 
+    List<DiveSiteReviewModel> findByScoreIsNull();
+
     interface RatingRow {
         UUID getSiteId();
 
@@ -24,11 +26,11 @@ public interface DiveSiteReviewRepository extends JpaRepository<DiveSiteReviewMo
         Long getTotal();
     }
 
-    @Query("select r.diveSite.id as siteId, avg(r.rating) as average, count(r) as total "
+    @Query("select r.diveSite.id as siteId, avg(r.score) as average, count(r) as total "
             + "from DiveSiteReviewModel r group by r.diveSite.id")
     List<RatingRow> aggregateAll();
 
-    @Query("select r.diveSite.id as siteId, avg(r.rating) as average, count(r) as total "
+    @Query("select r.diveSite.id as siteId, avg(r.score) as average, count(r) as total "
             + "from DiveSiteReviewModel r where r.diveSite.id = :siteId group by r.diveSite.id")
     Optional<RatingRow> aggregateFor(@Param("siteId") UUID siteId);
 }

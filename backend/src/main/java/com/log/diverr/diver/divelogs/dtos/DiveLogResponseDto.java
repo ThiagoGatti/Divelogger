@@ -11,6 +11,8 @@ import java.util.UUID;
 public record DiveLogResponseDto(
         UUID id,
         Long userId,
+        String ownerNome,
+        String ownerUsername,
         UUID diveSiteId,
         String diveSiteNome,
         LocalDateTime dataHora,
@@ -25,7 +27,9 @@ public record DiveLogResponseDto(
         DiveLogModel.TipoGas tipoGas,
         Integer pressaoInicial,
         Integer pressaoFinal,
-        Integer avaliacao,
+        Double notaExperiencia,
+        Double notaLocal,
+        String comentarioLocal,
         String observacoes,
         LocalDateTime updatedAt,
         List<ImageDto> imagens
@@ -34,6 +38,8 @@ public record DiveLogResponseDto(
         return new DiveLogResponseDto(
                 log.getId(),
                 log.getUser().getId(),
+                log.getUser().getNomeCompleto(),
+                log.getUser().getUsername(),
                 log.getDiveSite().getId(),
                 log.getDiveSite().getNome(),
                 log.getDataHora(),
@@ -48,7 +54,9 @@ public record DiveLogResponseDto(
                 log.getTipoGas(),
                 log.getPressaoInicial(),
                 log.getPressaoFinal(),
-                log.getAvaliacao(),
+                log.getNotaExperiencia(),
+                log.getNotaLocal(),
+                log.getComentarioLocal(),
                 log.getObservacoes(),
                 log.getUpdatedAt(),
                 log.getImages().stream()

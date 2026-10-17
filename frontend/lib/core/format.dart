@@ -61,3 +61,13 @@ String initialsOf(String name) {
   if (parts.length == 1) return parts.first[0].toUpperCase();
   return (parts.first[0] + parts.last[0]).toUpperCase();
 }
+
+/// "agora", "há 5 min", "há 3 h", "há 2 d" ou a data.
+String timeAgo(DateTime d) {
+  final diff = DateTime.now().difference(d);
+  if (diff.inMinutes < 1) return 'agora';
+  if (diff.inMinutes < 60) return 'há ${diff.inMinutes} min';
+  if (diff.inHours < 24) return 'há ${diff.inHours} h';
+  if (diff.inDays < 7) return 'há ${diff.inDays} d';
+  return formatDate(d);
+}

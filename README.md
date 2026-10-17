@@ -166,7 +166,22 @@ Privacidade dos mergulhos (`diveVisibility`):
 | `FOLLOWERS` (padrão) | qualquer pessoa que o segue (seguir é imediato, como no Letterboxd / Last.fm) |
 | `PUBLIC` | qualquer usuário do app |
 
-A regra é gravada hoje e passa a ser aplicada quando o módulo de seguidores for entregue.
+A regra é aplicada no servidor em **todo** acesso a dados de outra pessoa (mergulhos, listas, feed, reações e comentários).
+Mergulho que você não pode ver responde 404, como se não existisse. O perfil (nome, @usuário, bio, contadores e 4 favoritos) é visível para todos.
+
+## Notas de avaliação
+
+Todas as notas vão de **0,5 a 5 estrelas, em passos de meia estrela** (0 = sem nota).
+
+- **Local do mergulho** (`notaLocal` + `comentarioLocal`): vira a avaliação do usuário no Dive Site (a mais recente vale).
+  A página do local mostra a **média** de todos os mergulhadores.
+- **Minha experiência** (`notaExperiencia`): quanto o mergulho foi bom para o usuário; aparece junto com o mergulho (para quem pode vê-lo) e não altera a nota do local.
+
+As notas antigas (inteiras, 1 a 5) são migradas automaticamente na primeira inicialização do backend.
+
+## Reações
+
+Emojis permitidos: 🤿 🌊 🐠 🔥 👏 ❤️ (uma reação por usuário em cada mergulho; tocar na sua remove).
 
 ## Endpoints principais
 
@@ -179,6 +194,11 @@ A regra é gravada hoje e passa a ser aplicada quando o módulo de seguidores fo
 - `GET /api/site-reviews/{siteId}`, `PUT|DELETE /api/site-reviews/{siteId}/me` — avaliações (nota 1–5 + comentário) de locais
 - `GET|POST /api/lists`, `GET|PUT|DELETE /api/lists/{id}`, `POST|DELETE /api/lists/{id}/items`, `PUT /api/lists/{id}/items/order` — listas (ranqueadas ou não)
 - `GET /api/lists/wishlist`, `POST /api/lists/wishlist/items`, `DELETE /api/lists/wishlist/items/site/{siteId}` — "Quero mergulhar"
+- `PUT|DELETE /api/users/{id}/follow` — seguir / deixar de seguir (imediato); amigo = seguimento mútuo
+- `GET /api/users/search?q=`, `GET /api/users/{id}/profile|followers|following|friends|dive-logs|lists|favorites`
+- `GET /api/feed?page=&size=` — mergulhos de quem eu sigo (respeitando a privacidade de cada um)
+- `GET /api/dive-logs/{id}/social`, `PUT|DELETE /api/dive-logs/{id}/reaction`, `GET|POST /api/dive-logs/{id}/comments`, `DELETE /api/dive-logs/{id}/comments/{commentId}`
+- `GET /api/lists/favorites`, `PUT /api/lists/favorites` — até 4 locais favoritos; `GET|POST|DELETE /api/lists/visited…` — "Já mergulhei"
 - `GET /api/admin/users`, `PATCH /api/admin/users/{id}/plan` — **ADMIN**
 
 ## Architecture

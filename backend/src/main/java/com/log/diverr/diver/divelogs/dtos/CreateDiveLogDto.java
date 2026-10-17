@@ -52,9 +52,18 @@ public record CreateDiveLogDto(
         @Max(value = 400, message = "Pressão final inválida")
         Integer pressaoFinal,
 
-        @Min(value = 1, message = "Avaliação deve ser de 1 a 5")
-        @Max(value = 5, message = "Avaliação deve ser de 1 a 5")
-        Integer avaliacao,
+        /** "Minha experiência": 0,5 a 5 (meia estrela). */
+        @DecimalMin(value = "0.5", message = "A nota da experiência deve ir de 0,5 a 5")
+        @DecimalMax(value = "5.0", message = "A nota da experiência deve ir de 0,5 a 5")
+        Double notaExperiencia,
+
+        /** "Local do mergulho": vira também a avaliação do Dive Site. */
+        @DecimalMin(value = "0.5", message = "A nota do local deve ir de 0,5 a 5")
+        @DecimalMax(value = "5.0", message = "A nota do local deve ir de 0,5 a 5")
+        Double notaLocal,
+
+        @Size(max = 2000, message = "O comentário do local deve ter no máximo 2000 caracteres")
+        String comentarioLocal,
 
         @Size(max = 3000, message = "Observações muito longas (máx. 3000)")
         String observacoes

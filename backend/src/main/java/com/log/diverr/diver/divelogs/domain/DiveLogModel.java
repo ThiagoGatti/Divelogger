@@ -60,7 +60,17 @@ public class DiveLogModel {
 
     private Integer pressaoFinal;
 
+    /** Legado (1..5 inteiro). Migrado para notaExperiencia na inicialização; não é mais exposto. */
     private Integer avaliacao;
+
+    /** "Minha experiência": o quanto o mergulho foi bom (0,5 a 5, meia estrela). */
+    private Double notaExperiencia;
+
+    /** "Local do mergulho": nota dada ao Dive Site neste mergulho (também vira a avaliação do local). */
+    private Double notaLocal;
+
+    @Column(length = 2000)
+    private String comentarioLocal;
 
     @Column(length = 3000)
     private String observacoes;

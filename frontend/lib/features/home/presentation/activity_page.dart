@@ -39,7 +39,7 @@ class StatsTab extends StatelessWidget {
   }
 
   double? get _avgRating {
-    final r = logs.map((l) => l.avaliacao).whereType<int>().where((v) => v > 0);
+    final r = logs.map((l) => l.notaExperiencia).whereType<double>().where((v) => v > 0);
     return r.isEmpty ? null : r.reduce((a, b) => a + b) / r.length;
   }
 
@@ -189,7 +189,7 @@ class StatsTab extends StatelessWidget {
             StatCard(icon: Icons.thermostat_outlined, value: formatNumber(_avg(_nums((l) => l.temperaturaAgua)), '°C'), label: 'Temp. média'),
             StatCard(icon: Icons.visibility_outlined, value: formatMeters(_avg(_nums((l) => l.visibilidade))), label: 'Visibilidade média'),
             StatCard(icon: Icons.speed, value: formatNumber(_avgConsumo, 'bar'), label: 'Consumo médio'),
-            StatCard(icon: Icons.star_rounded, value: _avgRating == null ? '—' : _avgRating!.toStringAsFixed(1), label: 'Nota média'),
+            StatCard(icon: Icons.star_rounded, value: _avgRating == null ? '—' : _avgRating!.toStringAsFixed(1), label: 'Experiência média'),
           ],
         ),
         if (_topGas != null) ...[

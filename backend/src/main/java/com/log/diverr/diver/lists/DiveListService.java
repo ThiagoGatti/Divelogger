@@ -5,6 +5,7 @@ import com.log.diverr.diver.divesites.domain.DiveSiteImageModel;
 import com.log.diverr.diver.divesites.domain.DiveSiteModel;
 import com.log.diverr.diver.divesites.repository.DiveSiteRepository;
 import com.log.diverr.diver.lists.ListDtos.*;
+import com.log.diverr.diver.social.VisibilityService;
 import com.log.diverr.diver.storage.ImageStorageService;
 import com.log.diverr.diver.users.domain.UserModel;
 import com.log.diverr.diver.users.repository.UserRepository;
@@ -12,36 +13,40 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
-/** Listas pessoais. Por enquanto só o dono enxerga e edita; a visibilidade social vem com o módulo de seguidores. */
+/**
+ * Listas de Dive Sites. Escrita: só o dono. Leitura de listas de OUTRAS pessoas: só listas comuns
+ * (tipo LISTA) e somente se a privacidade do dono permitir (VisibilityService).
+ */
 @Service
 public class DiveListService {
 
     private static final int MAX_LISTS_PER_USER = 100;
     private static final int MAX_ITEMS_PER_LIST = 500;
+    public static final int MAX_FAVORITES = 4;
 
     private final DiveListRepository repository;
     private final DiveSiteRepository siteRepository;
     private final UserRepository userRepository;
     private final ImageStorageService storage;
+    private final VisibilityService visibility;
 
     public DiveListService(
             DiveListRepository repository,
             DiveSiteRepository siteRepository,
             UserRepository userRepository,
-            ImageStorageService storage
+            ImageStorageService storage,
+            VisibilityService visibility
     ) {
         this.repository = repository;
         this.siteRepository = siteRepository;
         this.userRepository = userRepository;
         this.storage = storage;
+        this.visibility = visibility;
     }
 
-    // ---------------- listas ----------------
+    // ---------------- listas comuns ----------------
 
     @Transactional(readOnly = true)
     public List<ListSummaryDto> listMine(Long userId) {
@@ -51,10 +56,21 @@ public class DiveListService {
                 .toList();
     }
 
+    /** Listas comuns de outro usuário, se a privacidade dele permitir. */
+    @Transactional(readOnly = true)
+    public List<ListSummaryDto> listsOf(Long ownerId, Long viewerId) {
+        UserModel owner = user(ownerId);
+        if (!visibility.canViewDives(viewerId, owner)) {
+            throw ApiException.forbidden("Este usuário não compartilha as listas com você");
+        }
+        return listMine(ownerId);
+    }
+
     @Transactional
     public ListDetailDto create(Long userId, ListRequestDto dto) {
         UserModel owner = user(userId);
-        long existing = repository.findByOwnerIdOrderByCreatedAtDesc(userId).size();
+        long existing = repository.findByOwnerIdOrderByCreatedAtDesc(userId).stream()
+                .filter(l -> l.getTipo() == DiveListModel.Tipo.LISTA).count();
         if (existing >= MAX_LISTS_PER_USER) {
             throw ApiException.badRequest("Limite de " + MAX_LISTS_PER_USER + " listas atingido");
         }
@@ -67,16 +83,27 @@ public class DiveListService {
         return detail(repository.saveAndFlush(list));
     }
 
+    /** Dono vê qualquer lista dele; outras pessoas só veem listas comuns que a privacidade permitir. */
     @Transactional(readOnly = true)
-    public ListDetailDto get(UUID id, Long userId) {
-        return detail(owned(id, userId));
+    public ListDetailDto get(UUID id, Long viewerId) {
+        DiveListModel list = repository.findById(id)
+                .orElseThrow(() -> ApiException.notFound("Lista não encontrada"));
+        boolean owner = list.getOwner().getId().equals(viewerId);
+        if (!owner) {
+            boolean allowed = list.getTipo() == DiveListModel.Tipo.LISTA
+                    && visibility.canViewDives(viewerId, list.getOwner());
+            if (!allowed) {
+                throw ApiException.notFound("Lista não encontrada");
+            }
+        }
+        return detail(list);
     }
 
     @Transactional
     public ListDetailDto update(UUID id, Long userId, ListRequestDto dto) {
         DiveListModel list = owned(id, userId);
-        if (list.getTipo() == DiveListModel.Tipo.QUERO_MERGULHAR) {
-            throw ApiException.badRequest("A lista \"Quero mergulhar\" não pode ser editada");
+        if (list.getTipo() != DiveListModel.Tipo.LISTA) {
+            throw ApiException.badRequest("Esta lista especial não pode ser editada");
         }
         list.setNome(dto.nome().trim());
         list.setDescricao(blankToNull(dto.descricao()));
@@ -88,8 +115,8 @@ public class DiveListService {
     @Transactional
     public void delete(UUID id, Long userId) {
         DiveListModel list = owned(id, userId);
-        if (list.getTipo() == DiveListModel.Tipo.QUERO_MERGULHAR) {
-            throw ApiException.badRequest("A lista \"Quero mergulhar\" não pode ser excluída");
+        if (list.getTipo() != DiveListModel.Tipo.LISTA) {
+            throw ApiException.badRequest("Esta lista especial não pode ser excluída");
         }
         repository.delete(list);
     }
@@ -135,27 +162,105 @@ public class DiveListService {
         return detail(repository.saveAndFlush(list));
     }
 
-    // ---------------- "Quero mergulhar" ----------------
+    // ---------------- listas especiais: Quero mergulhar / Já mergulhei ----------------
 
     @Transactional
     public ListDetailDto wishlist(Long userId) {
-        return detail(wishlistEntity(userId));
+        return detail(special(userId, DiveListModel.Tipo.QUERO_MERGULHAR, "Quero mergulhar"));
     }
 
     @Transactional
     public ListDetailDto addToWishlist(Long userId, AddItemDto dto) {
-        return addItemTo(wishlistEntity(userId), dto);
+        return addItemTo(special(userId, DiveListModel.Tipo.QUERO_MERGULHAR, "Quero mergulhar"), dto);
     }
 
     @Transactional
     public ListDetailDto removeFromWishlist(Long userId, UUID siteId) {
-        DiveListModel list = wishlistEntity(userId);
-        list.getItems().removeIf(i -> i.getDiveSite().getId().equals(siteId));
-        renumber(list);
+        return removeSite(special(userId, DiveListModel.Tipo.QUERO_MERGULHAR, "Quero mergulhar"), siteId);
+    }
+
+    @Transactional
+    public ListDetailDto visited(Long userId) {
+        return detail(special(userId, DiveListModel.Tipo.JA_MERGULHEI, "Já mergulhei"));
+    }
+
+    @Transactional
+    public ListDetailDto addToVisited(Long userId, AddItemDto dto) {
+        return addItemTo(special(userId, DiveListModel.Tipo.JA_MERGULHEI, "Já mergulhei"), dto);
+    }
+
+    @Transactional
+    public ListDetailDto removeFromVisited(Long userId, UUID siteId) {
+        return removeSite(special(userId, DiveListModel.Tipo.JA_MERGULHEI, "Já mergulhei"), siteId);
+    }
+
+    // ---------------- 4 favoritos ----------------
+
+    @Transactional
+    public ListDetailDto favorites(Long userId) {
+        return detail(special(userId, DiveListModel.Tipo.FAVORITOS, "Meus 4 favoritos"));
+    }
+
+    /** Qualquer usuário autenticado vê os favoritos de um perfil. Não cria a lista se ela não existir. */
+    @Transactional(readOnly = true)
+    public ListDetailDto favoritesOf(Long ownerId) {
+        user(ownerId);
+        return repository.findByOwnerIdAndTipo(ownerId, DiveListModel.Tipo.FAVORITOS)
+                .map(this::detail)
+                .orElseGet(() -> new ListDetailDto(null, "Meus 4 favoritos", null, true,
+                        DiveListModel.Tipo.FAVORITOS.name(), List.of()));
+    }
+
+    /** Substitui os favoritos pela lista informada (na ordem recebida, até 4). */
+    @Transactional
+    public ListDetailDto setFavorites(Long userId, List<UUID> siteIds) {
+        if (siteIds.size() > MAX_FAVORITES) {
+            throw ApiException.badRequest("Escolha até " + MAX_FAVORITES + " locais favoritos");
+        }
+        if (new HashSet<>(siteIds).size() != siteIds.size()) {
+            throw ApiException.badRequest("Há locais repetidos nos favoritos");
+        }
+
+        DiveListModel list = special(userId, DiveListModel.Tipo.FAVORITOS, "Meus 4 favoritos");
+        list.setRanked(true);
+
+        // remove os que saíram
+        list.getItems().removeIf(i -> !siteIds.contains(i.getDiveSite().getId()));
+        repository.flush();
+
+        // atualiza posição dos que ficaram e adiciona os novos (sem remover+reinserir o mesmo local,
+        // para não violar a restrição de unicidade lista+local dentro do mesmo flush)
+        Map<UUID, DiveListItemModel> existing = new HashMap<>();
+        list.getItems().forEach(i -> existing.put(i.getDiveSite().getId(), i));
+
+        for (int pos = 0; pos < siteIds.size(); pos++) {
+            UUID siteId = siteIds.get(pos);
+            DiveListItemModel item = existing.get(siteId);
+            if (item == null) {
+                DiveSiteModel site = siteRepository.findById(siteId)
+                        .orElseThrow(() -> ApiException.notFound("Dive site não encontrado"));
+                if (!site.isAtivo()) {
+                    throw ApiException.badRequest("O local \"" + site.getNome() + "\" está desativado");
+                }
+                item = new DiveListItemModel();
+                item.setList(list);
+                item.setDiveSite(site);
+                list.getItems().add(item);
+            }
+            item.setPosition(pos + 1);
+        }
+        list.getItems().sort((a, b) -> Integer.compare(a.getPosition(), b.getPosition()));
+        list.setUpdatedAt(LocalDateTime.now());
         return detail(repository.saveAndFlush(list));
     }
 
     // ---------------- util ----------------
+
+    private ListDetailDto removeSite(DiveListModel list, UUID siteId) {
+        list.getItems().removeIf(i -> i.getDiveSite().getId().equals(siteId));
+        renumber(list);
+        return detail(repository.saveAndFlush(list));
+    }
 
     private ListDetailDto addItemTo(DiveListModel list, AddItemDto dto) {
         DiveSiteModel site = siteRepository.findById(dto.siteId())
@@ -165,6 +270,9 @@ public class DiveListService {
         }
         if (list.getItems().stream().anyMatch(i -> i.getDiveSite().getId().equals(site.getId()))) {
             throw ApiException.conflict("Este local já está na lista");
+        }
+        if (list.getTipo() == DiveListModel.Tipo.FAVORITOS && list.getItems().size() >= MAX_FAVORITES) {
+            throw ApiException.badRequest("Escolha até " + MAX_FAVORITES + " locais favoritos");
         }
         if (list.getItems().size() >= MAX_ITEMS_PER_LIST) {
             throw ApiException.badRequest("Limite de " + MAX_ITEMS_PER_LIST + " locais por lista");
@@ -181,14 +289,14 @@ public class DiveListService {
         return detail(repository.saveAndFlush(list));
     }
 
-    private DiveListModel wishlistEntity(Long userId) {
-        return repository.findByOwnerIdAndTipo(userId, DiveListModel.Tipo.QUERO_MERGULHAR)
+    private DiveListModel special(Long userId, DiveListModel.Tipo tipo, String nome) {
+        return repository.findByOwnerIdAndTipo(userId, tipo)
                 .orElseGet(() -> {
                     DiveListModel list = new DiveListModel();
                     list.setOwner(user(userId));
-                    list.setNome("Quero mergulhar");
-                    list.setTipo(DiveListModel.Tipo.QUERO_MERGULHAR);
-                    list.setRanked(false);
+                    list.setNome(nome);
+                    list.setTipo(tipo);
+                    list.setRanked(tipo == DiveListModel.Tipo.FAVORITOS);
                     return repository.saveAndFlush(list);
                 });
     }
@@ -204,7 +312,7 @@ public class DiveListService {
 
     private UserModel user(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> ApiException.unauthorized("Usuário não encontrado"));
+                .orElseThrow(() -> ApiException.notFound("Usuário não encontrado"));
     }
 
     private static void renumber(DiveListModel list) {

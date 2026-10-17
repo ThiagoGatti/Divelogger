@@ -42,6 +42,8 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
   int _page = 0;
   bool _inWishlist = false;
   bool _wishBusy = false;
+  bool _visited = false;
+  bool _visitedBusy = false;
 
   bool get _isAdmin => AppSession.instance.isAdmin;
 
@@ -55,10 +57,47 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
 
   Future<void> _loadWishlist() async {
     try {
-      final w = await ListsApi().wishlist();
-      if (mounted) setState(() => _inWishlist = w.containsSite(_site.id));
+      final api = ListsApi();
+      final results = await Future.wait([api.wishlist(), api.visited()]);
+      if (!mounted) return;
+      setState(() {
+        _inWishlist = results[0].containsSite(_site.id);
+        _visited = results[1].containsSite(_site.id);
+      });
     } on ApiException {
-      // sem conexão: o marcador só não reflete o estado
+      // sem conexão: os botões só não refletem o estado
+    }
+  }
+
+  /// "Já mergulhei": marca o local manualmente (mergulhos feitos antes do app).
+  /// Se já existem mergulhos registrados aqui, o local conta como visitado automaticamente.
+  Future<void> _toggleVisited() async {
+    if (_visitedBusy) return;
+    if (_myLogs.isNotEmpty) {
+      showSnack(
+        context,
+        'Você tem ${_myLogs.length} ${_myLogs.length == 1 ? 'mergulho registrado' : 'mergulhos registrados'} aqui, '
+        'então este local já conta como visitado.',
+      );
+      return;
+    }
+    setState(() => _visitedBusy = true);
+    try {
+      final api = ListsApi();
+      final list = _visited
+          ? await api.removeFromVisited(_site.id)
+          : await api.addToVisited(_site.id);
+      AppEvents.notifyListsChanged();
+      if (!mounted) return;
+      setState(() {
+        _visited = list.containsSite(_site.id);
+        _visitedBusy = false;
+      });
+      showSnack(context, _visited ? 'Marcado como "Já mergulhei".' : 'Desmarcado.');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _visitedBusy = false);
+      showSnack(context, e.message, error: true);
     }
   }
 
@@ -355,11 +394,6 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
                   foregroundColor: Colors.white,
                   title: Text(s.nome, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                   actions: [
-                    IconButton(
-                      onPressed: _wishBusy ? null : _toggleWishlist,
-                      tooltip: _inWishlist ? 'Remover de "Quero mergulhar"' : 'Quero mergulhar aqui',
-                      icon: Icon(_inWishlist ? Icons.bookmark : Icons.bookmark_border),
-                    ),
                     if (_isAdmin)
                       PopupMenuButton<String>(
                         onSelected: (v) {
@@ -391,6 +425,37 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Row(
+                          children: [
+                            _ActionTile(
+                              icon: _visited || _myLogs.isNotEmpty ? Icons.check_circle : Icons.check_circle_outline,
+                              label: 'Já mergulhei',
+                              active: _visited || _myLogs.isNotEmpty,
+                              busy: _visitedBusy,
+                              activeColor: DiverrTheme.success,
+                              onTap: _toggleVisited,
+                            ),
+                            const SizedBox(width: 10),
+                            _ActionTile(
+                              icon: _inWishlist ? Icons.bookmark : Icons.bookmark_border,
+                              label: 'Quero mergulhar',
+                              active: _inWishlist,
+                              busy: _wishBusy,
+                              activeColor: DiverrTheme.primary,
+                              onTap: _toggleWishlist,
+                            ),
+                            const SizedBox(width: 10),
+                            _ActionTile(
+                              icon: Icons.playlist_add,
+                              label: 'Lista',
+                              active: false,
+                              busy: false,
+                              activeColor: DiverrTheme.primary,
+                              onTap: () => showAddToListSheet(context, s.id),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
                         if (s.localizacao.isNotEmpty)
                           Row(
                             children: [
@@ -507,14 +572,7 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
                             icon: const Icon(Icons.scuba_diving),
                             label: const Text('Registrar mergulho aqui'),
                           ),
-                        if (s.ativo) ...[
-                          const SizedBox(height: 10),
-                          OutlinedButton.icon(
-                            onPressed: () => showAddToListSheet(context, s.id),
-                            icon: const Icon(Icons.playlist_add),
-                            label: const Text('Adicionar a uma lista'),
-                          ),
-                        ],
+
                       ],
                     ),
                   ),
@@ -655,6 +713,63 @@ class _LockedPhotosBanner extends StatelessWidget {
             ),
             const Icon(Icons.chevron_right, color: DiverrTheme.muted),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Botão de ação da barra logo abaixo da foto do local.
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final bool busy;
+  final Color activeColor;
+  final VoidCallback onTap;
+
+  const _ActionTile({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.busy,
+    required this.activeColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = active ? activeColor : DiverrTheme.muted;
+    return Expanded(
+      child: InkWell(
+        onTap: busy ? null : onTap,
+        borderRadius: BorderRadius.circular(DiverrTheme.radiusSmall),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          decoration: BoxDecoration(
+            color: active ? activeColor.withOpacity(.10) : Colors.white,
+            borderRadius: BorderRadius.circular(DiverrTheme.radiusSmall),
+            border: Border.all(
+              color: active ? activeColor : DiverrTheme.dark.withOpacity(.10),
+              width: active ? 1.6 : 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              busy
+                  ? SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: color))
+                  : Icon(icon, color: color, size: 24),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color),
+              ),
+            ],
+          ),
         ),
       ),
     );

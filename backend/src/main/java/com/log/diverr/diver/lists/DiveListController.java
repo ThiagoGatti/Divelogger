@@ -58,6 +58,44 @@ public class DiveListController {
         return ResponseEntity.ok(service.removeFromWishlist(CurrentUser.id(jwt), siteId));
     }
 
+    // ---- "Já mergulhei" ----
+
+    @GetMapping("/visited")
+    public ResponseEntity<ListDetailDto> visited(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(service.visited(CurrentUser.id(jwt)));
+    }
+
+    @PostMapping("/visited/items")
+    public ResponseEntity<ListDetailDto> addToVisited(
+            @Valid @RequestBody AddItemDto dto,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.addToVisited(CurrentUser.id(jwt), dto));
+    }
+
+    @DeleteMapping("/visited/items/site/{siteId}")
+    public ResponseEntity<ListDetailDto> removeFromVisited(
+            @PathVariable UUID siteId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.removeFromVisited(CurrentUser.id(jwt), siteId));
+    }
+
+    // ---- 4 favoritos ----
+
+    @GetMapping("/favorites")
+    public ResponseEntity<ListDetailDto> favorites(@AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(service.favorites(CurrentUser.id(jwt)));
+    }
+
+    @PutMapping("/favorites")
+    public ResponseEntity<ListDetailDto> setFavorites(
+            @Valid @RequestBody FavoritesDto dto,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ResponseEntity.ok(service.setFavorites(CurrentUser.id(jwt), dto.siteIds()));
+    }
+
     // ---- listas comuns ----
 
     @GetMapping("/{id}")

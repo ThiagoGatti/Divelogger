@@ -15,12 +15,16 @@ class DiveLogsTab extends StatelessWidget {
   final String? error;
   final Future<void> Function() onRefresh;
 
+  /// Perfil de outra pessoa: sem botão de registrar mergulho.
+  final bool readOnly;
+
   const DiveLogsTab({
     super.key,
     required this.logs,
     required this.loading,
     required this.error,
     required this.onRefresh,
+    this.readOnly = false,
   });
 
   Future<void> _open(BuildContext context, DiveLogModel log) async {
@@ -44,10 +48,12 @@ class DiveLogsTab extends StatelessWidget {
           else if (logs.isEmpty)
             EmptyState(
               icon: Icons.scuba_diving,
-              title: 'Seu diário está vazio',
-              message: 'Registre seu primeiro mergulho com local, profundidade, condições e fotos.',
-              actionLabel: 'Registrar mergulho',
-              onAction: () => openDiveLogForm(context),
+              title: readOnly ? 'Nenhum mergulho ainda' : 'Seu diário está vazio',
+              message: readOnly
+                  ? 'Esta pessoa ainda não registrou mergulhos.'
+                  : 'Registre seu primeiro mergulho com local, profundidade, condições e fotos.',
+              actionLabel: readOnly ? null : 'Registrar mergulho',
+              onAction: readOnly ? null : () => openDiveLogForm(context),
             )
           else ...[
             Padding(

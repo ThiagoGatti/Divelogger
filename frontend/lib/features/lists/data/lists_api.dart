@@ -54,4 +54,24 @@ class ListsApi {
 
   Future<ListDetail> removeFromWishlist(String siteId) async =>
       ListDetail.fromJson(await _api.deleteJson('/api/lists/wishlist/items/site/$siteId'));
+
+  // ---- Já mergulhei ----
+
+  Future<ListDetail> visited() async =>
+      ListDetail.fromJson(await _api.get('/api/lists/visited'));
+
+  Future<ListDetail> addToVisited(String siteId) async =>
+      ListDetail.fromJson(await _api.post('/api/lists/visited/items', {'siteId': siteId}));
+
+  Future<ListDetail> removeFromVisited(String siteId) async =>
+      ListDetail.fromJson(await _api.deleteJson('/api/lists/visited/items/site/$siteId'));
+
+  // ---- 4 favoritos ----
+
+  Future<ListDetail> favorites() async =>
+      ListDetail.fromJson(await _api.get('/api/lists/favorites'));
+
+  /// Substitui os favoritos (até 4, na ordem informada).
+  Future<ListDetail> setFavorites(List<String> siteIds) async =>
+      ListDetail.fromJson(await _api.put('/api/lists/favorites', {'siteIds': siteIds}));
 }

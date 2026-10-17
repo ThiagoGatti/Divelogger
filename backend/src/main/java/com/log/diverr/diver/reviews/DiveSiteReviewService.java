@@ -1,6 +1,7 @@
 package com.log.diverr.diver.reviews;
 
 import com.log.diverr.diver.common.ApiException;
+import com.log.diverr.diver.common.RatingRules;
 import com.log.diverr.diver.divesites.domain.DiveSiteModel;
 import com.log.diverr.diver.divesites.repository.DiveSiteRepository;
 import com.log.diverr.diver.reviews.ReviewDtos.ReviewDto;
@@ -52,12 +53,49 @@ public class DiveSiteReviewService {
                     return r;
                 });
 
-        review.setRating(dto.rating());
-        review.setTexto(dto.texto() == null || dto.texto().isBlank() ? null : dto.texto().trim());
-        review.setUpdatedAt(LocalDateTime.now());
+        RatingRules.assertHalfStep(dto.rating(), "A nota");
+        applyScore(review, dto.rating(), dto.texto());
         repository.saveAndFlush(review);
 
         return build(siteId, userId);
+    }
+
+    /**
+     * Usado ao registrar um mergulho: a nota do local vira a avaliação do usuário para o Dive Site
+     * (a mais recente vale). Não falha se o local estiver desativado.
+     */
+    @Transactional
+    public void upsertFromDive(UUID siteId, Long userId, Double score, String texto) {
+        if (score == null) {
+            return;
+        }
+        RatingRules.assertHalfStep(score, "A nota do local");
+
+        DiveSiteModel site = siteRepository.findById(siteId).orElse(null);
+        if (site == null || !site.isAtivo()) {
+            return;
+        }
+        UserModel user = userRepository.findById(userId).orElse(null);
+        if (user == null) {
+            return;
+        }
+
+        DiveSiteReviewModel review = repository.findByDiveSiteIdAndUserId(siteId, userId)
+                .orElseGet(() -> {
+                    DiveSiteReviewModel r = new DiveSiteReviewModel();
+                    r.setDiveSite(site);
+                    r.setUser(user);
+                    return r;
+                });
+        applyScore(review, score, texto);
+        repository.saveAndFlush(review);
+    }
+
+    private static void applyScore(DiveSiteReviewModel review, double score, String texto) {
+        review.setScore(score);
+        review.setRating(RatingRules.legacy(score));
+        review.setTexto(texto == null || texto.isBlank() ? null : texto.trim());
+        review.setUpdatedAt(LocalDateTime.now());
     }
 
     @Transactional
@@ -115,7 +153,7 @@ public class DiveSiteReviewService {
                 u.getId(),
                 first,
                 u.getUsername(),
-                r.getRating(),
+                r.getScore() != null ? r.getScore() : r.getRating(),
                 r.getTexto(),
                 r.getCreatedAt(),
                 u.getId().equals(viewerId)

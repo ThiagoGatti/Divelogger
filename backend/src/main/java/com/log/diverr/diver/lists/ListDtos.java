@@ -30,6 +30,11 @@ public final class ListDtos {
             String nota
     ) {}
 
+    public record FavoritesDto(
+            @NotNull(message = "Informe os locais favoritos")
+            List<UUID> siteIds
+    ) {}
+
     public record ReorderDto(
             @NotNull(message = "Informe a nova ordem")
             List<UUID> itemIds

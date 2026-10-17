@@ -56,7 +56,7 @@ class _SiteReviewsSectionState extends State<SiteReviewsSection> {
       isScrollControlled: true,
       builder: (ctx) => Padding(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: _ReviewSheet(initialRating: mine?.rating ?? 0, initialText: mine?.texto ?? ''),
+        child: _ReviewSheet(initialRating: mine?.rating ?? 0.0, initialText: mine?.texto ?? ''),
       ),
     );
     if (result == null) return;
@@ -116,11 +116,11 @@ class _SiteReviewsSectionState extends State<SiteReviewsSection> {
               Column(
                 children: [
                   Text(
-                    data.average == null ? '—' : data.average!.toStringAsFixed(1),
+                    formatRating(data.average),
                     style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w900, height: 1),
                   ),
                   const SizedBox(height: 4),
-                  RatingStars(value: (data.average ?? 0).round(), size: 16),
+                  RatingStars(value: data.average ?? 0, size: 16),
                   const SizedBox(height: 4),
                   Text(
                     '${data.count} ${data.count == 1 ? 'avaliação' : 'avaliações'}',
@@ -207,13 +207,13 @@ class _SiteReviewsSectionState extends State<SiteReviewsSection> {
 }
 
 class _ReviewInput {
-  final int rating;
+  final double rating;
   final String? texto;
   _ReviewInput(this.rating, this.texto);
 }
 
 class _ReviewSheet extends StatefulWidget {
-  final int initialRating;
+  final double initialRating;
   final String initialText;
   const _ReviewSheet({required this.initialRating, required this.initialText});
 
@@ -222,7 +222,7 @@ class _ReviewSheet extends StatefulWidget {
 }
 
 class _ReviewSheetState extends State<_ReviewSheet> {
-  late int _rating = widget.initialRating;
+  late double _rating = widget.initialRating;
   late final TextEditingController _text = TextEditingController(text: widget.initialText);
 
   @override

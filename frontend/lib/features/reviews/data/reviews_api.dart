@@ -8,7 +8,7 @@ class ReviewsApi {
   Future<ReviewsResult> list(String siteId) async =>
       ReviewsResult.fromJson(await _api.get('/api/site-reviews/$siteId'));
 
-  Future<ReviewsResult> saveMine(String siteId, int rating, String? texto) async =>
+  Future<ReviewsResult> saveMine(String siteId, double rating, String? texto) async =>
       ReviewsResult.fromJson(
         await _api.put('/api/site-reviews/$siteId/me', {'rating': rating, 'texto': texto}),
       );

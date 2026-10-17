@@ -16,7 +16,16 @@ import 'list_widgets.dart';
 class ListDetailsPage extends StatefulWidget {
   final String listId;
   final String initialTitle;
-  const ListDetailsPage({super.key, required this.listId, required this.initialTitle});
+
+  /// Lista de outra pessoa: sem editar, adicionar, remover ou reordenar.
+  final bool readOnly;
+
+  const ListDetailsPage({
+    super.key,
+    required this.listId,
+    required this.initialTitle,
+    this.readOnly = false,
+  });
 
   @override
   State<ListDetailsPage> createState() => _ListDetailsPageState();
@@ -164,7 +173,7 @@ class _ListDetailsPageState extends State<ListDetailsPage> {
       appBar: AppBar(
         title: Text(list?.nome ?? widget.initialTitle),
         actions: [
-          if (list != null)
+          if (list != null && !widget.readOnly)
             PopupMenuButton<String>(
               onSelected: (v) {
                 if (v == 'edit') _edit();
@@ -177,7 +186,7 @@ class _ListDetailsPageState extends State<ListDetailsPage> {
             ),
         ],
       ),
-      floatingActionButton: list == null
+      floatingActionButton: (list == null || widget.readOnly)
           ? null
           : FloatingActionButton.extended(
               onPressed: _addSite,
@@ -211,10 +220,10 @@ class _ListDetailsPageState extends State<ListDetailsPage> {
                         icon: Icons.format_list_bulleted,
                         title: 'Lista vazia',
                         message: 'Adicione os locais que fazem parte desta lista.',
-                        actionLabel: 'Adicionar local',
-                        onAction: _addSite,
+                        actionLabel: widget.readOnly ? null : 'Adicionar local',
+                        onAction: widget.readOnly ? null : _addSite,
                       )
-                    else if (list.ranked)
+                    else if (list.ranked && !widget.readOnly)
                       ReorderableListView(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -247,9 +256,9 @@ class _ListDetailsPageState extends State<ListDetailsPage> {
                           padding: const EdgeInsets.only(bottom: 10),
                           child: ListItemTile(
                             item: item,
-                            showPosition: false,
+                            showPosition: list.ranked,
                             onTap: () => _openSite(item),
-                            onRemove: () => _remove(item),
+                            onRemove: widget.readOnly ? null : () => _remove(item),
                           ),
                         ),
                   ],

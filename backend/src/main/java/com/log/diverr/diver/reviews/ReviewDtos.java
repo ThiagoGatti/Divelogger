@@ -1,7 +1,7 @@
 package com.log.diverr.diver.reviews;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
@@ -14,10 +14,10 @@ public final class ReviewDtos {
     private ReviewDtos() {}
 
     public record ReviewRequestDto(
-            @NotNull(message = "Informe a nota de 1 a 5")
-            @Min(value = 1, message = "A nota deve ser de 1 a 5")
-            @Max(value = 5, message = "A nota deve ser de 1 a 5")
-            Integer rating,
+            @NotNull(message = "Informe a nota")
+            @DecimalMin(value = "0.5", message = "A nota deve ir de 0,5 a 5")
+            @DecimalMax(value = "5.0", message = "A nota deve ir de 0,5 a 5")
+            Double rating,
 
             @Size(max = 2000, message = "O comentário deve ter no máximo 2000 caracteres")
             String texto
@@ -28,7 +28,7 @@ public final class ReviewDtos {
             Long userId,
             String autor,
             String username,
-            int rating,
+            double rating,
             String texto,
             LocalDateTime createdAt,
             boolean mine

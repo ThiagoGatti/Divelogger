@@ -7,6 +7,11 @@ import '../../../core/network/api_client.dart';
 import '../../../core/session/session.dart';
 import '../../../core/ui/widgets.dart';
 import '../../auth/data/me_api.dart';
+import '../../social/data/social_api.dart';
+import '../../social/data/social_models.dart';
+import '../../social/presentation/favorites_section.dart';
+import '../../social/presentation/follow_list_page.dart';
+import '../../social/presentation/user_search_page.dart';
 import '../../dive_logs/data/dive_log_model.dart';
 import '../../dive_logs/data/dive_logs_api.dart';
 import '../../dive_logs/presentation/dive_log_details_page.dart';
@@ -27,6 +32,7 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _api = DiveLogsApi();
   List<DiveLogModel> _logs = [];
+  PublicProfile? _social;
   bool _loading = true;
   String? _error;
 
@@ -34,12 +40,17 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _load();
+    _loadSocial();
     AppEvents.diveLogsChanged.addListener(_load);
+    AppEvents.followsChanged.addListener(_loadSocial);
+    AppEvents.listsChanged.addListener(_loadSocial);
   }
 
   @override
   void dispose() {
     AppEvents.diveLogsChanged.removeListener(_load);
+    AppEvents.followsChanged.removeListener(_loadSocial);
+    AppEvents.listsChanged.removeListener(_loadSocial);
     super.dispose();
   }
 
@@ -62,8 +73,28 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  /// Contadores (seguidores, seguindo, amigos) e total de locais (mergulhos + "Já mergulhei").
+  Future<void> _loadSocial() async {
+    final me = AppSession.instance.currentUser;
+    if (me == null) return;
+    try {
+      final p = await SocialApi().profile(me.id);
+      if (mounted) setState(() => _social = p);
+    } on ApiException {
+      // sem conexão: mantém o que já tem
+    }
+  }
+
   Future<void> _refreshAll() async {
-    await Future.wait([_load(), MeApi().refresh()]);
+    await Future.wait([_load(), _loadSocial(), MeApi().refresh()]);
+  }
+
+  void _openFollowList(FollowListMode mode) {
+    final me = AppSession.instance.currentUser;
+    if (me == null) return;
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => FollowListPage(userId: me.id, mode: mode)))
+        .then((_) => _loadSocial());
   }
 
   Future<void> _openLast() async {
@@ -82,13 +113,20 @@ class _ProfilePageState extends State<ProfilePage> {
     final sites = _logs.map((l) => l.diveSiteId).toSet().length;
     final last = _logs.isEmpty ? null : _logs.first;
 
-    Widget stat(String value, String label) => Expanded(
-          child: Column(
-            children: [
-              Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
-              const SizedBox(height: 2),
-              Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
-            ],
+    Widget stat(String value, String label, {VoidCallback? onTap}) => Expanded(
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                children: [
+                  Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                  const SizedBox(height: 2),
+                  Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                ],
+              ),
+            ),
           ),
         );
 
@@ -143,6 +181,13 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     IconButton(
+                      onPressed: () => Navigator.of(context)
+                          .push(MaterialPageRoute(builder: (_) => const UserSearchPage()))
+                          .then((_) => _loadSocial()),
+                      icon: const Icon(Icons.person_search_outlined, color: Colors.white),
+                      tooltip: 'Encontrar mergulhadores',
+                    ),
+                    IconButton(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const SettingsPage()),
                       ),
@@ -162,13 +207,29 @@ class _ProfilePageState extends State<ProfilePage> {
                 Row(
                   children: [
                     stat('${_logs.length}', 'Mergulhos'),
-                    stat('$sites', 'Locais'),
+                    stat('${_social?.sitesCount ?? sites}', 'Locais'),
                     stat(formatDuration(totalMinutes), 'Submerso'),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Divider(color: Colors.white24, height: 14),
+                Row(
+                  children: [
+                    stat('${_social?.followers ?? 0}', 'Seguidores', onTap: () => _openFollowList(FollowListMode.followers)),
+                    stat('${_social?.following ?? 0}', 'Seguindo', onTap: () => _openFollowList(FollowListMode.following)),
+                    stat('${_social?.friends ?? 0}', 'Amigos', onTap: () => _openFollowList(FollowListMode.friends)),
                   ],
                 ),
               ],
             ),
           ),
+          if (user != null) ...[
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FavoritesSection(userId: user.id, editable: true),
+            ),
+          ],
           if (last != null) ...[
             const SizedBox(height: 12),
             Card(

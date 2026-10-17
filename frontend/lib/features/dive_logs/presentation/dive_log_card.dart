@@ -43,7 +43,7 @@ class DiveLogCard extends StatelessWidget {
                 InfoChip(icon: Icons.arrow_downward, text: formatMeters(log.profundidadeMaxima)),
               if (log.duracaoMinutos != null)
                 InfoChip(icon: Icons.timer_outlined, text: formatDuration(log.duracaoMinutos), color: DiverrTheme.secondary),
-              if ((log.avaliacao ?? 0) > 0) RatingStars(value: log.avaliacao!, size: 15),
+              if ((log.notaExperiencia ?? 0) > 0) RatingStars(value: log.notaExperiencia!, size: 15),
             ],
           ),
         ],

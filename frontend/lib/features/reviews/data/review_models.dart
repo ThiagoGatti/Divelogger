@@ -3,7 +3,7 @@ class ReviewModel {
   final int userId;
   final String autor;
   final String? username;
-  final int rating;
+  final double rating;
   final String? texto;
   final DateTime createdAt;
   final bool mine;
@@ -24,7 +24,7 @@ class ReviewModel {
         userId: (j['userId'] as num?)?.toInt() ?? 0,
         autor: j['autor']?.toString() ?? 'Mergulhador',
         username: j['username'] as String?,
-        rating: (j['rating'] as num?)?.toInt() ?? 0,
+        rating: (j['rating'] as num?)?.toDouble() ?? 0,
         texto: j['texto'] as String?,
         createdAt: DateTime.tryParse(j['createdAt']?.toString() ?? '') ?? DateTime.now(),
         mine: j['mine'] as bool? ?? false,

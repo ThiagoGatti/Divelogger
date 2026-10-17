@@ -87,6 +87,23 @@ class ApiClient {
     return _asMap(json);
   }
 
+  /// POST cuja resposta é uma lista JSON (ex.: comentários atualizados).
+  Future<List<dynamic>> postList(String path, Map<String, dynamic> body) async {
+    final json = await _send(
+      true,
+      () => _client.post(_uri(path), headers: _headers(auth: true), body: jsonEncode(body)),
+    );
+    if (json is List) return json;
+    throw ApiException('Resposta inesperada do servidor.');
+  }
+
+  /// DELETE cuja resposta é uma lista JSON.
+  Future<List<dynamic>> deleteList(String path) async {
+    final json = await _send(true, () => _client.delete(_uri(path), headers: _headers(auth: true)));
+    if (json is List) return json;
+    throw ApiException('Resposta inesperada do servidor.');
+  }
+
   Future<List<dynamic>> getList(String path) async {
     final json = await _send(true, () => _client.get(_uri(path), headers: _headers(auth: true)));
     if (json is List) return json;

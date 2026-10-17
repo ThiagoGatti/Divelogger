@@ -17,6 +17,7 @@ const Map<String, String> kEntradaLabels = {
   'BARCO': 'Barco',
   'COSTA': 'Costa',
   'PIER': 'Píer',
+  'PISCINA': 'Piscina',
   'OUTRO': 'Outro',
 };
 
@@ -46,7 +47,12 @@ class DiveLogModel {
   final String? tipoGas;
   final int? pressaoInicial;
   final int? pressaoFinal;
-  final int? avaliacao;
+  final double? notaExperiencia;
+  final double? notaLocal;
+  final String? comentarioLocal;
+  final int ownerId;
+  final String ownerNome;
+  final String? ownerUsername;
   final String? observacoes;
   final List<ImageRef> imagens;
 
@@ -66,7 +72,12 @@ class DiveLogModel {
     this.tipoGas,
     this.pressaoInicial,
     this.pressaoFinal,
-    this.avaliacao,
+    this.notaExperiencia,
+    this.notaLocal,
+    this.comentarioLocal,
+    this.ownerId = 0,
+    this.ownerNome = '',
+    this.ownerUsername,
     this.observacoes,
     this.imagens = const [],
   });
@@ -97,7 +108,12 @@ class DiveLogModel {
       tipoGas: json['tipoGas']?.toString(),
       pressaoInicial: i(json['pressaoInicial']),
       pressaoFinal: i(json['pressaoFinal']),
-      avaliacao: i(json['avaliacao']),
+      notaExperiencia: d(json['notaExperiencia']),
+      notaLocal: d(json['notaLocal']),
+      comentarioLocal: json['comentarioLocal']?.toString(),
+      ownerId: i(json['userId']) ?? 0,
+      ownerNome: json['ownerNome']?.toString() ?? '',
+      ownerUsername: json['ownerUsername']?.toString(),
       observacoes: json['observacoes']?.toString(),
       imagens: ImageRef.listFrom(json['imagens']),
     );

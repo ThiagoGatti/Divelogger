@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<UserModel, Long> {
     Optional<UserModel> findByUsername(String username);
 
     java.util.List<UserModel> findByUsernameIsNull();
+
+    java.util.List<UserModel> findTop20ByUsernameContainingIgnoreCaseOrNomeCompletoContainingIgnoreCase(String username, String nome);
 }
