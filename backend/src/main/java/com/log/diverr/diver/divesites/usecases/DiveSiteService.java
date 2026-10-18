@@ -34,19 +34,22 @@ public class DiveSiteService {
     private final ImageStorageService storage;
     private final PlanService planService;
     private final DiveSiteReviewRepository reviewRepository;
+    private final com.log.diverr.diver.operators.OperatorRepository operatorRepository;
 
     public DiveSiteService(
             DiveSiteRepository repository,
             UserRepository userRepository,
             ImageStorageService storage,
             PlanService planService,
-            DiveSiteReviewRepository reviewRepository
+            DiveSiteReviewRepository reviewRepository,
+            com.log.diverr.diver.operators.OperatorRepository operatorRepository
     ) {
         this.repository = repository;
         this.userRepository = userRepository;
         this.storage = storage;
         this.planService = planService;
         this.reviewRepository = reviewRepository;
+        this.operatorRepository = operatorRepository;
     }
 
     /** Usuário comum só vê locais ativos. ADMIN pode pedir também os inativos. */
@@ -103,6 +106,25 @@ public class DiveSiteService {
         site.setAtivo(ativo);
         site.setUpdatedAt(LocalDateTime.now());
         return toDto(repository.save(site), DiveSiteResponseDto.Access.admin());
+    }
+
+    /** Define quais operadoras atuam no local (substitui os vínculos atuais). ADMIN. */
+    @Transactional
+    public DiveSiteResponseDto setOperators(UUID id, List<UUID> operatorIds) {
+        DiveSiteModel site = find(id);
+        java.util.Set<UUID> wanted = new java.util.HashSet<>(operatorIds);
+
+        site.getOperators().removeIf(o -> !wanted.contains(o.getId()));
+        java.util.Set<UUID> current = new java.util.HashSet<>();
+        site.getOperators().forEach(o -> current.add(o.getId()));
+
+        for (UUID opId : wanted) {
+            if (current.contains(opId)) continue;
+            var op = operatorRepository.findById(opId)
+                    .orElseThrow(() -> ApiException.notFound("Operadora não encontrada"));
+            site.getOperators().add(op);
+        }
+        return toDto(repository.saveAndFlush(site), DiveSiteResponseDto.Access.admin());
     }
 
     // ---------------- imagens (ADMIN) ----------------

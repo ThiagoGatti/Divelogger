@@ -49,6 +49,15 @@ public class DiveSiteModel {
     @Column(length = 20)
     private NivelDificuldade nivel;
 
+    /** Operadoras que atuam neste local (vinculadas por ADMIN). */
+    @ManyToMany
+    @JoinTable(
+            name = "dive_site_operators",
+            joinColumns = @JoinColumn(name = "dive_site_id"),
+            inverseJoinColumns = @JoinColumn(name = "operator_id")
+    )
+    private java.util.Set<com.log.diverr.diver.operators.OperatorModel> operators = new java.util.HashSet<>();
+
     // ---- Informações avançadas (visíveis para Premium e ADMIN) ----
     @Column(length = 200)
     private String melhorEpoca;

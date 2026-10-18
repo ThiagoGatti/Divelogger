@@ -13,7 +13,7 @@ import '../../social/presentation/favorites_section.dart';
 import '../../social/presentation/follow_list_page.dart';
 import '../../social/presentation/user_search_page.dart';
 import '../../dive_logs/data/dive_log_model.dart';
-import '../../dive_logs/data/dive_logs_api.dart';
+import '../../dive_logs/data/dive_logs_repository.dart';
 import '../../dive_logs/presentation/dive_log_details_page.dart';
 import '../../lists/presentation/lists_tabs.dart';
 import '../../profile/presentation/diary_tab.dart';
@@ -30,7 +30,6 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final _api = DiveLogsApi();
   List<DiveLogModel> _logs = [];
   PublicProfile? _social;
   bool _loading = true;
@@ -57,7 +56,7 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _load() async {
     if (!AppSession.instance.isLoggedIn) return;
     try {
-      final logs = await _api.findMine();
+      final logs = await DiveLogsRepository.instance.findMine();
       if (!mounted) return;
       setState(() {
         _logs = logs;

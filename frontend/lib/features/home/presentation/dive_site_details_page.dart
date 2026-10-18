@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../app/theme.dart';
@@ -6,13 +7,17 @@ import '../../../core/events.dart';
 import '../../../core/format.dart';
 import '../../../core/images/image_service.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/offline/sites_cache.dart';
 import '../../../core/session/session.dart';
 import '../../../core/ui/widgets.dart';
 import '../../dive_logs/data/dive_log_model.dart';
-import '../../dive_logs/data/dive_logs_api.dart';
+import '../../dive_logs/data/dive_logs_repository.dart';
 import '../../dive_logs/presentation/dive_log_details_page.dart';
 import '../../dive_logs/presentation/dive_log_form_page.dart';
 import '../../lists/data/lists_api.dart';
+import '../../operators/data/operator_models.dart';
+import '../../operators/data/operators_api.dart';
+import '../../operators/presentation/operator_details_page.dart';
 import '../../lists/presentation/list_widgets.dart';
 import '../../reviews/presentation/site_reviews_section.dart';
 import '../data/dive_site_model.dart';
@@ -31,7 +36,6 @@ class DiveSiteDetailsPage extends StatefulWidget {
 
 class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
   final _sitesApi = DiveSitesApi();
-  final _logsApi = DiveLogsApi();
   final _images = ImageService();
 
   late DiveSiteModel _site;
@@ -44,6 +48,7 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
   bool _wishBusy = false;
   bool _visited = false;
   bool _visitedBusy = false;
+  bool _pinBusy = false;
 
   bool get _isAdmin => AppSession.instance.isAdmin;
 
@@ -53,19 +58,37 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
     _site = widget.site;
     _loadMyLogs();
     _loadWishlist();
+    AppEvents.listsChanged.addListener(_loadWishlist);
+    AppEvents.diveLogsChanged.addListener(_onDiveLogsChanged);
   }
 
+  @override
+  void dispose() {
+    AppEvents.listsChanged.removeListener(_loadWishlist);
+    AppEvents.diveLogsChanged.removeListener(_onDiveLogsChanged);
+    super.dispose();
+  }
+
+  void _onDiveLogsChanged() {
+    _loadMyLogs();
+    _loadWishlist(); // registrar um mergulho aqui marca "Já mergulhei" e tira de "Quero mergulhar"
+  }
+
+  /// Carrega o estado de "Quero mergulhar" e "Já mergulhei" de forma INDEPENDENTE:
+  /// se uma das chamadas falhar, a outra continua refletindo o estado correto.
   Future<void> _loadWishlist() async {
+    final api = ListsApi();
     try {
-      final api = ListsApi();
-      final results = await Future.wait([api.wishlist(), api.visited()]);
-      if (!mounted) return;
-      setState(() {
-        _inWishlist = results[0].containsSite(_site.id);
-        _visited = results[1].containsSite(_site.id);
-      });
+      final w = await api.wishlist();
+      if (mounted) setState(() => _inWishlist = w.containsSite(_site.id));
     } on ApiException {
-      // sem conexão: os botões só não refletem o estado
+      // sem conexão: mantém o estado atual
+    }
+    try {
+      final v = await api.visited();
+      if (mounted) setState(() => _visited = v.containsSite(_site.id));
+    } on ApiException {
+      // idem
     }
   }
 
@@ -91,6 +114,7 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
       if (!mounted) return;
       setState(() {
         _visited = list.containsSite(_site.id);
+        if (_visited) _inWishlist = false; // o servidor tira de "Quero mergulhar"
         _visitedBusy = false;
       });
       showSnack(context, _visited ? 'Marcado como "Já mergulhei".' : 'Desmarcado.');
@@ -125,7 +149,7 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
 
   Future<void> _loadMyLogs() async {
     try {
-      final logs = await _logsApi.findMineBySite(_site.id);
+      final logs = await DiveLogsRepository.instance.findMineBySite(_site.id);
       if (!mounted) return;
       setState(() {
         _myLogs = logs;
@@ -187,6 +211,141 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
         _changed = true;
       });
       showSnack(context, deactivating ? 'Dive Site desativado.' : 'Dive Site reativado.');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      showSnack(context, e.message, error: true);
+    }
+  }
+
+  /// "Salvar offline": baixa os detalhes e as fotos do local para uso sem internet (como uma playlist offline).
+  Future<void> _togglePin() async {
+    if (_pinBusy) return;
+
+    if (SitesCache.isPinned(_site.id)) {
+      await SitesCache.unpin(_site.id);
+      if (mounted) showSnack(context, 'Removido do uso offline.');
+      return;
+    }
+
+    setState(() => _pinBusy = true);
+    try {
+      final fresh = await _sitesApi.pinOffline(_site.id);
+
+      // pré-carrega as fotos para aparecerem sem internet
+      final photos = <(String, String)>[
+        for (final i in fresh.images)
+          if (i.url != null) (i.url!, i.id),
+        for (final o in fresh.operators)
+          if (o.photoUrl != null) (o.photoUrl!, o.photoId ?? o.id),
+      ];
+      for (final p in photos) {
+        if (!mounted) break;
+        try {
+          await precacheImage(CachedNetworkImageProvider(p.$1, cacheKey: p.$2), context);
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _site = fresh;
+        _pinBusy = false;
+      });
+      showSnack(context, 'Salvo para uso offline, com as fotos.');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _pinBusy = false);
+      showSnack(
+        context,
+        e.isNetwork ? 'Conecte-se à internet para salvar este local offline.' : e.message,
+        error: true,
+      );
+    }
+  }
+
+  /// ADMIN: escolhe quais operadoras atuam neste local.
+  Future<void> _manageOperators() async {
+    List<OperatorSummary> all;
+    try {
+      all = await OperatorsApi().list();
+    } on ApiException catch (e) {
+      if (mounted) showSnack(context, e.message, error: true);
+      return;
+    }
+    if (!mounted) return;
+
+    final selected = _site.operators.map((o) => o.id).toSet();
+    final result = await showModalBottomSheet<Set<String>>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final current = {...selected};
+        return StatefulBuilder(
+          builder: (ctx, setSheet) => SafeArea(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * .75),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(24, 0, 24, 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Operadoras neste local', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                    ),
+                  ),
+                  Flexible(
+                    child: all.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('Nenhuma operadora cadastrada. Cadastre em Perfil, Configurações, Operadoras.',
+                                style: TextStyle(color: DiverrTheme.muted)),
+                          )
+                        : ListView(
+                            shrinkWrap: true,
+                            children: [
+                              for (final o in all)
+                                CheckboxListTile(
+                                  value: current.contains(o.id),
+                                  onChanged: (v) => setSheet(() {
+                                    if (v == true) {
+                                      current.add(o.id);
+                                    } else {
+                                      current.remove(o.id);
+                                    }
+                                  }),
+                                  title: Text(o.nome, style: const TextStyle(fontWeight: FontWeight.w700)),
+                                  subtitle: o.endereco == null ? null : Text(o.endereco!, maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  activeColor: DiverrTheme.primary,
+                                ),
+                            ],
+                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx, current),
+                      child: const Text('Salvar'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    if (result == null) return;
+
+    setState(() => _busy = true);
+    try {
+      final updated = await _sitesApi.setOperators(_site.id, result.toList());
+      if (!mounted) return;
+      setState(() {
+        _site = updated;
+        _busy = false;
+        _changed = true;
+      });
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
@@ -394,6 +553,23 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
                   foregroundColor: Colors.white,
                   title: Text(s.nome, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                   actions: [
+                    ValueListenableBuilder<Set<String>>(
+                      valueListenable: SitesCache.pinnedIds,
+                      builder: (context, ids, _) {
+                        final pinned = ids.contains(_site.id);
+                        return IconButton(
+                          onPressed: _pinBusy ? null : _togglePin,
+                          tooltip: pinned ? 'Salvo offline (toque para remover)' : 'Salvar offline',
+                          icon: _pinBusy
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : Icon(pinned ? Icons.download_done : Icons.download_for_offline_outlined),
+                        );
+                      },
+                    ),
                     if (_isAdmin)
                       PopupMenuButton<String>(
                         onSelected: (v) {
@@ -519,6 +695,50 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
                         ] else if (s.extendedLocked) ...[
                           const SizedBox(height: 22),
                           const _LockedInfoCard(),
+                        ],
+                        if (s.operators.isNotEmpty || _isAdmin) ...[
+                          const SizedBox(height: 22),
+                          SectionTitle(
+                            'Operadoras',
+                            trailing: _isAdmin
+                                ? TextButton.icon(
+                                    onPressed: _manageOperators,
+                                    icon: const Icon(Icons.edit_outlined, size: 18),
+                                    label: const Text('Gerenciar'),
+                                  )
+                                : null,
+                          ),
+                          if (s.operators.isEmpty)
+                            const Text('Nenhuma operadora vinculada a este local ainda.',
+                                style: TextStyle(color: DiverrTheme.muted))
+                          else
+                            for (final o in s.operators)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: ImageSideCard(
+                                  imageUrl: o.photoUrl,
+                                  cacheKey: o.photoId,
+                                  placeholderIcon: Icons.storefront_outlined,
+                                  imageWidth: 80,
+                                  minHeight: 80,
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => OperatorDetailsPage(operatorId: o.id, initialName: o.nome),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(o.nome, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
+                                      if (o.endereco != null) ...[
+                                        const SizedBox(height: 3),
+                                        Text(o.endereco!, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5)),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
                         ],
                         if (s.hiddenImages > 0) ...[
                           const SizedBox(height: 16),

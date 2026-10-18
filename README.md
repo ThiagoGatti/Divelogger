@@ -169,6 +169,37 @@ Privacidade dos mergulhos (`diveVisibility`):
 A regra é aplicada no servidor em **todo** acesso a dados de outra pessoa (mergulhos, listas, feed, reações e comentários).
 Mergulho que você não pode ver responde 404, como se não existisse. O perfil (nome, @usuário, bio, contadores e 4 favoritos) é visível para todos.
 
+## Offline e sincronização
+
+O app funciona sem internet para o que importa no barco ou em locais remotos:
+
+- **Registrar, editar e excluir mergulhos offline** (com fotos). Tudo fica numa fila no aparelho e é enviado
+  sozinho ao abrir o app, ao voltar para o app e quando a conexão retorna (faixa "Sincronizando…" / "aguardando envio").
+- **Dive Sites no aparelho:** a última lista recebida fica em cache automático (dá para escolher o local ao registrar
+  um mergulho sem sinal). Em cada local, o botão **Salvar offline** (ícone de download) guarda os detalhes completos e as
+  fotos, como uma playlist offline; a aba Sites tem o filtro "Salvos offline".
+- **Fotos:** são copiadas para o app e enviadas na sincronização. Foto recusada pelo servidor (ex.: limite do plano) é
+  descartada com aviso, e o mergulho é mantido.
+- **Sessão:** o app abre offline mesmo com o token vencido (24 h). Ao voltar a internet pede novo login; a fila é preservada.
+- **Idempotência:** mergulhos criados offline levam um `clientId`; reenvios após queda de rede não duplicam.
+- **Erros definitivos** (ex.: local desativado enquanto estava offline) aparecem em "Problemas de sincronização"
+  (tentar de novo ou descartar).
+
+Limites atuais: reações, comentários, feed, listas, avaliações e o mapa (as imagens do mapa) exigem internet; fotos já
+vistas ou salvas offline continuam aparecendo.
+
+## Operadoras
+
+ADMIN cadastra operadoras (**nome, foto e endereço**) em Perfil, Configurações, Operadoras e as vincula aos locais onde
+atuam (pela própria operadora ou na página do local, botão *Gerenciar*). Todos os usuários veem as operadoras na página
+do Dive Site e podem abrir a página da operadora.
+
+## Banco de dados: restrições de enum
+
+O Hibernate cria uma restrição CHECK para cada campo `@Enumerated(STRING)` e o `ddl-auto=update` não a atualiza quando um
+valor novo é acrescentado. O componente `SchemaFixer` remove essas restrições (idempotente, a cada inicialização), e a
+validação continua no Java. Ele sai quando o projeto adotar migrations (Flyway).
+
 ## Notas de avaliação
 
 Todas as notas vão de **0,5 a 5 estrelas, em passos de meia estrela** (0 = sem nota).
@@ -199,6 +230,9 @@ Emojis permitidos: 🤿 🌊 🐠 🔥 👏 ❤️ (uma reação por usuário em
 - `GET /api/feed?page=&size=` — mergulhos de quem eu sigo (respeitando a privacidade de cada um)
 - `GET /api/dive-logs/{id}/social`, `PUT|DELETE /api/dive-logs/{id}/reaction`, `GET|POST /api/dive-logs/{id}/comments`, `DELETE /api/dive-logs/{id}/comments/{commentId}`
 - `GET /api/lists/favorites`, `PUT /api/lists/favorites` — até 4 locais favoritos; `GET|POST|DELETE /api/lists/visited…` — "Já mergulhei"
+- `GET /api/operators`, `GET /api/operators/{id}`; `POST|PUT|PATCH /api/operators…`, `PUT /api/operators/{id}/sites`, `…/photo` — escrita só **ADMIN**
+- `PUT /api/dive-sites/{id}/operators` — vincula operadoras ao local (**ADMIN**)
+- `PATCH /api/admin/users/{id}/role` — dar/remover ADMIN (**ADMIN**; o usuário precisa entrar de novo)
 - `GET /api/admin/users`, `PATCH /api/admin/users/{id}/plan` — **ADMIN**
 
 ## Architecture

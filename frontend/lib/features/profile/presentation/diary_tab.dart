@@ -134,6 +134,7 @@ class _DiaryRow extends StatelessWidget {
               child: RemoteImage(
                 url: log.coverUrl,
                 cacheKey: log.imagens.isEmpty ? null : log.imagens.first.id,
+                localPath: log.imagens.isEmpty && log.localPhotos.isNotEmpty ? log.localPhotos.first : null,
                 width: 54,
                 height: 54,
                 placeholderIcon: Icons.scuba_diving,
@@ -173,7 +174,13 @@ class _DiaryRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (log.observacoes != null && log.observacoes!.isNotEmpty)
+            if (log.pending)
+              Icon(
+                log.syncError != null ? Icons.error_outline : Icons.cloud_upload_outlined,
+                size: 18,
+                color: log.syncError != null ? DiverrTheme.danger : DiverrTheme.warning,
+              )
+            else if (log.observacoes != null && log.observacoes!.isNotEmpty)
               const Icon(Icons.notes, size: 18, color: DiverrTheme.muted),
             const Icon(Icons.chevron_right, color: DiverrTheme.muted),
           ],

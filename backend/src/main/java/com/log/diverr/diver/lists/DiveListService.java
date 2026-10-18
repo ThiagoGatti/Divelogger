@@ -184,9 +184,44 @@ public class DiveListService {
         return detail(special(userId, DiveListModel.Tipo.JA_MERGULHEI, "Já mergulhei"));
     }
 
+    /** Marcar "Já mergulhei" manualmente também tira o local de "Quero mergulhar". */
     @Transactional
     public ListDetailDto addToVisited(Long userId, AddItemDto dto) {
-        return addItemTo(special(userId, DiveListModel.Tipo.JA_MERGULHEI, "Já mergulhei"), dto);
+        ListDetailDto result = addItemTo(special(userId, DiveListModel.Tipo.JA_MERGULHEI, "Já mergulhei"), dto);
+        removeFromWishlistQuiet(userId, dto.siteId());
+        return result;
+    }
+
+    /**
+     * Chamado ao registrar um mergulho: o local passa a constar em "Já mergulhei" e, se estava em
+     * "Quero mergulhar", sai de lá. Idempotente.
+     */
+    @Transactional
+    public void markVisitedFromDive(Long userId, UUID siteId) {
+        DiveListModel visited = special(userId, DiveListModel.Tipo.JA_MERGULHEI, "Já mergulhei");
+        boolean already = visited.getItems().stream().anyMatch(i -> i.getDiveSite().getId().equals(siteId));
+        if (!already) {
+            DiveSiteModel site = siteRepository.findById(siteId).orElse(null);
+            if (site != null) {
+                DiveListItemModel item = new DiveListItemModel();
+                item.setList(visited);
+                item.setDiveSite(site);
+                item.setPosition(visited.getItems().size() + 1);
+                visited.getItems().add(item);
+                visited.setUpdatedAt(LocalDateTime.now());
+                repository.saveAndFlush(visited);
+            }
+        }
+        removeFromWishlistQuiet(userId, siteId);
+    }
+
+    private void removeFromWishlistQuiet(Long userId, UUID siteId) {
+        repository.findByOwnerIdAndTipo(userId, DiveListModel.Tipo.QUERO_MERGULHAR).ifPresent(w -> {
+            if (w.getItems().removeIf(i -> i.getDiveSite().getId().equals(siteId))) {
+                renumber(w);
+                repository.saveAndFlush(w);
+            }
+        });
     }
 
     @Transactional

@@ -13,6 +13,7 @@ import '../../social/presentation/public_profile_page.dart';
 import '../../social/presentation/social_widgets.dart';
 import '../data/dive_log_model.dart';
 import '../data/dive_logs_api.dart';
+import '../data/dive_logs_repository.dart';
 import 'dive_log_form_page.dart';
 
 /// Detalhes de um mergulho. Ao voltar devolve true se algo mudou (para a lista recarregar).
@@ -45,7 +46,7 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
     final saved = await openDiveLogForm(context, existing: _log);
     if (!saved || !mounted) return;
     try {
-      final fresh = await _api.findById(_log.id);
+      final fresh = await DiveLogsRepository.instance.findById(_log.id);
       if (!mounted) return;
       setState(() {
         _log = fresh;
@@ -68,9 +69,9 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
 
     setState(() => _busy = true);
     try {
-      await _api.delete(_log.id);
+      await DiveLogsRepository.instance.delete(_log);
       AppEvents.notifyDiveLogsChanged();
-      await MeApi().refresh();
+      MeApi().refresh(); // sem await: offline não deve travar a exclusão
       if (!mounted) return;
       Navigator.pop(context, true);
     } on ApiException catch (e) {
@@ -81,6 +82,13 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
   }
 
   Future<void> _addPhoto() async {
+    if (_log.pending) {
+      showSnack(
+        context,
+        'Este mergulho ainda não foi sincronizado. Toque em Editar para adicionar fotos; elas serão enviadas junto.',
+      );
+      return;
+    }
     final ent = AppSession.instance.entitlements;
     if (_log.imagens.length >= ent.maxPhotosPerLog) {
       if (!ent.isPremium) {
@@ -176,6 +184,15 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
 
   Widget _gallery() {
     final imgs = _log.imagens;
+
+    // fotos guardadas no aparelho (mergulho feito offline)
+    if (imgs.isEmpty && _log.localPhotos.isNotEmpty) {
+      return PageView.builder(
+        itemCount: _log.localPhotos.length,
+        onPageChanged: (i) => setState(() => _page = i),
+        itemBuilder: (_, i) => RemoteImage(url: null, localPath: _log.localPhotos[i]),
+      );
+    }
     if (imgs.isEmpty) {
       return Container(
         decoration: const BoxDecoration(gradient: DiverrTheme.oceanGradient),
@@ -246,6 +263,35 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
                 const SizedBox(height: 2),
                 Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _pendingCard(DiveLogModel l) {
+    final error = l.syncError != null;
+    final color = error ? DiverrTheme.danger : DiverrTheme.warning;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.10),
+        borderRadius: BorderRadius.circular(DiverrTheme.radiusSmall),
+        border: Border.all(color: color.withOpacity(.5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(error ? Icons.error_outline : Icons.cloud_upload_outlined, color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              error
+                  ? 'Não foi possível sincronizar: ${l.syncError}'
+                  : 'Salvo no aparelho. Será enviado quando houver internet. '
+                      'Reações e comentários ficam disponíveis depois do envio.',
+              style: const TextStyle(height: 1.4),
             ),
           ),
         ],
@@ -355,6 +401,10 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (l.pending) ...[
+                          _pendingCard(l),
+                          const SizedBox(height: 14),
+                        ],
                         if (!_isOwner) ...[
                           _ownerCard(l),
                           const SizedBox(height: 14),
@@ -424,7 +474,7 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
                           ),
                         ],
                         const SizedBox(height: 24),
-                        DiveLogSocialSection(logId: l.id),
+                        if (!l.pending) DiveLogSocialSection(logId: l.id),
                       ],
                     ),
                   ),

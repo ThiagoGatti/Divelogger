@@ -66,6 +66,9 @@ public record CreateDiveLogDto(
         String comentarioLocal,
 
         @Size(max = 3000, message = "Observações muito longas (máx. 3000)")
-        String observacoes
+        String observacoes,
+
+        /** Opcional. Gerado pelo app ao criar offline; torna o envio idempotente. */
+        UUID clientId
 ) {
 }

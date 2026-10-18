@@ -60,6 +60,10 @@ public class DiveLogModel {
 
     private Integer pressaoFinal;
 
+    /** Id gerado pelo app ao criar o mergulho offline; garante que reenvios não dupliquem. */
+    @Column(name = "client_id")
+    private java.util.UUID clientId;
+
     /** Legado (1..5 inteiro). Migrado para notaExperiencia na inicialização; não é mais exposto. */
     private Integer avaliacao;
 

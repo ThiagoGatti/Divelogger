@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -524,9 +526,13 @@ class RemoteImage extends StatelessWidget {
   final double? height;
   final IconData placeholderIcon;
 
+  /// Foto guardada no aparelho (mergulho ainda não sincronizado). Tem prioridade sobre [url].
+  final String? localPath;
+
   const RemoteImage({
     super.key,
     required this.url,
+    this.localPath,
     this.cacheKey,
     this.fit = BoxFit.cover,
     this.width,
@@ -543,6 +549,15 @@ class RemoteImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (localPath != null) {
+      return Image.file(
+        File(localPath!),
+        fit: fit,
+        width: width,
+        height: height,
+        errorBuilder: (_, __, ___) => _placeholder(),
+      );
+    }
     if (url == null) return _placeholder();
     return CachedNetworkImage(
       imageUrl: url!,
@@ -635,6 +650,7 @@ class LoadingButton extends StatelessWidget {
 class ImageSideCard extends StatelessWidget {
   final String? imageUrl;
   final String? cacheKey;
+  final String? localPath;
   final IconData placeholderIcon;
   final double imageWidth;
   final double minHeight;
@@ -646,6 +662,7 @@ class ImageSideCard extends StatelessWidget {
     super.key,
     required this.imageUrl,
     this.cacheKey,
+    this.localPath,
     this.placeholderIcon = Icons.image_outlined,
     this.imageWidth = 104,
     this.minHeight = 104,
@@ -675,6 +692,7 @@ class ImageSideCard extends StatelessWidget {
                 child: RemoteImage(
                   url: imageUrl,
                   cacheKey: cacheKey,
+                  localPath: localPath,
                   placeholderIcon: placeholderIcon,
                 ),
               ),

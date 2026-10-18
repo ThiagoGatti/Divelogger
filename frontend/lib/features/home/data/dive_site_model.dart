@@ -1,4 +1,5 @@
 import '../../../core/models/image_ref.dart';
+import '../../operators/data/operator_models.dart';
 
 const Map<String, String> kTipoLabels = {
   'COSTEIRO': 'Costeiro',
@@ -103,6 +104,9 @@ class DiveSiteModel {
   /// true quando existe conteúdo avançado que o plano atual não enxerga.
   final bool extendedLocked;
 
+  /// Operadoras que atuam no local (cadastradas por admins).
+  final List<OperatorSummary> operators;
+
   const DiveSiteModel({
     required this.id,
     required this.nome,
@@ -122,6 +126,7 @@ class DiveSiteModel {
     this.ratingCount = 0,
     this.extended,
     this.extendedLocked = false,
+    this.operators = const [],
   });
 
   int get hiddenImages => totalImages > images.length ? totalImages - images.length : 0;
@@ -157,6 +162,7 @@ class DiveSiteModel {
           ? SiteExtended.fromJson(Map<String, dynamic>.from(json['extended'] as Map))
           : null,
       extendedLocked: json['extendedLocked'] as bool? ?? false,
+      operators: OperatorSummary.listFrom(json['operators']),
     );
   }
 

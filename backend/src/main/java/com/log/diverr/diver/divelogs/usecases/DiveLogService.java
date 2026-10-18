@@ -9,6 +9,7 @@ import com.log.diverr.diver.divelogs.dtos.DiveLogResponseDto;
 import com.log.diverr.diver.divelogs.repository.DiveLogRepository;
 import com.log.diverr.diver.divesites.domain.DiveSiteModel;
 import com.log.diverr.diver.divesites.repository.DiveSiteRepository;
+import com.log.diverr.diver.lists.DiveListService;
 import com.log.diverr.diver.plans.PlanService;
 import com.log.diverr.diver.reviews.DiveSiteReviewService;
 import com.log.diverr.diver.social.DiveLogCommentRepository;
@@ -42,6 +43,7 @@ public class DiveLogService {
     private final DiveSiteReviewService reviewService;
     private final DiveLogReactionRepository reactions;
     private final DiveLogCommentRepository comments;
+    private final DiveListService listService;
 
     public DiveLogService(
             DiveLogRepository diveLogRepository,
@@ -52,7 +54,8 @@ public class DiveLogService {
             VisibilityService visibility,
             DiveSiteReviewService reviewService,
             DiveLogReactionRepository reactions,
-            DiveLogCommentRepository comments
+            DiveLogCommentRepository comments,
+            DiveListService listService
     ) {
         this.diveLogRepository = diveLogRepository;
         this.userRepository = userRepository;
@@ -63,6 +66,7 @@ public class DiveLogService {
         this.reviewService = reviewService;
         this.reactions = reactions;
         this.comments = comments;
+        this.listService = listService;
     }
 
     // ---------------- leitura ----------------
@@ -109,6 +113,14 @@ public class DiveLogService {
         UserModel user = userRepository.findById(userId)
                 .orElseThrow(() -> ApiException.unauthorized("Usuário não encontrado"));
 
+        // idempotência: o app offline pode reenviar o mesmo mergulho (clientId) após uma falha de rede
+        if (dto.clientId() != null) {
+            var existing = diveLogRepository.findByUserIdAndClientId(userId, dto.clientId());
+            if (existing.isPresent()) {
+                return DiveLogResponseDto.from(existing.get(), storage);
+            }
+        }
+
         DiveSiteModel site = activeSite(dto.diveSiteId());
         validateRules(dto);
 
@@ -117,9 +129,13 @@ public class DiveLogService {
         log.setDiveSite(site);
         apply(log, dto);
 
+        log.setClientId(dto.clientId());
+
         DiveLogModel saved = diveLogRepository.saveAndFlush(log);
         // a nota/comentário do local viram a avaliação do usuário no Dive Site
         reviewService.upsertFromDive(site.getId(), userId, dto.notaLocal(), dto.comentarioLocal());
+        // o local passa a constar em "Já mergulhei" e sai de "Quero mergulhar"
+        listService.markVisitedFromDive(userId, site.getId());
         return DiveLogResponseDto.from(saved, storage);
     }
 
@@ -136,6 +152,7 @@ public class DiveLogService {
 
         DiveLogModel saved = diveLogRepository.saveAndFlush(log);
         reviewService.upsertFromDive(saved.getDiveSite().getId(), userId, dto.notaLocal(), dto.comentarioLocal());
+        listService.markVisitedFromDive(userId, saved.getDiveSite().getId());
         return DiveLogResponseDto.from(saved, storage);
     }
 

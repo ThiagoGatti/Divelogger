@@ -32,7 +32,8 @@ public record DiveSiteResponseDto(
         Double ratingAverage,
         long ratingCount,
         DiveSiteExtendedDto extended,
-        boolean extendedLocked
+        boolean extendedLocked,
+        List<com.log.diverr.diver.operators.OperatorDtos.OperatorSummaryDto> operators
 ) {
     /** O que o espectador pode ver. */
     public record Access(boolean extended, int maxPhotos) {
@@ -72,7 +73,12 @@ public record DiveSiteResponseDto(
                 ratingAverage,
                 ratingCount,
                 access.extended() ? DiveSiteExtendedDto.from(site) : null,
-                !access.extended() && site.hasExtendedInfo()
+                !access.extended() && site.hasExtendedInfo(),
+                site.getOperators().stream()
+                        .filter(com.log.diverr.diver.operators.OperatorModel::isAtivo)
+                        .sorted((a, b) -> a.getNome().compareToIgnoreCase(b.getNome()))
+                        .map(o -> com.log.diverr.diver.operators.OperatorDtos.OperatorSummaryDto.from(o, storage))
+                        .toList()
         );
     }
 }

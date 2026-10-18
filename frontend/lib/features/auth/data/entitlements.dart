@@ -35,6 +35,17 @@ class Entitlements {
 
   bool get isPremium => plano == 'PREMIUM';
 
+  Map<String, dynamic> toJson() => {
+        'plano': plano,
+        'maxDiveLogs': maxDiveLogs,
+        'diveLogsUsed': diveLogsUsed,
+        'maxPhotosPerLog': maxPhotosPerLog,
+        'maxSitePhotos': maxSitePhotos,
+        'siteExtendedInfo': siteExtendedInfo,
+        'advancedStats': advancedStats,
+        'exportEnabled': exportEnabled,
+      };
+
   factory Entitlements.fromJson(Map<String, dynamic> json) => Entitlements(
         plano: json['plano']?.toString() ?? 'FREE',
         maxDiveLogs: (json['maxDiveLogs'] as num?)?.toInt(),

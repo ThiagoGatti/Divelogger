@@ -56,6 +56,15 @@ class DiveLogModel {
   final String? observacoes;
   final List<ImageRef> imagens;
 
+  /// Salvo só no aparelho, aguardando envio ao servidor (feito sem internet).
+  final bool pending;
+
+  /// Fotos guardadas no aparelho que ainda não foram enviadas.
+  final List<String> localPhotos;
+
+  /// Motivo pelo qual o servidor recusou a sincronização (o usuário precisa corrigir ou descartar).
+  final String? syncError;
+
   const DiveLogModel({
     required this.id,
     required this.diveSiteId,
@@ -80,7 +89,55 @@ class DiveLogModel {
     this.ownerUsername,
     this.observacoes,
     this.imagens = const [],
+    this.pending = false,
+    this.localPhotos = const [],
+    this.syncError,
   });
+
+  /// Monta o mergulho a partir do corpo de uma requisição guardada offline (criação/edição pendente).
+  factory DiveLogModel.fromRequestBody(
+    Map<String, dynamic> b, {
+    required String id,
+    required String siteNome,
+    required int ownerId,
+    required String ownerNome,
+    String? ownerUsername,
+    List<ImageRef> imagens = const [],
+    List<String> localPhotos = const [],
+    String? syncError,
+  }) {
+    double? d(dynamic v) => v == null ? null : (v as num).toDouble();
+    int? i(dynamic v) => v == null ? null : (v as num).toInt();
+
+    return DiveLogModel(
+      id: id,
+      diveSiteId: b['diveSiteId']?.toString() ?? '',
+      diveSiteNome: siteNome,
+      dataHora: DateTime.tryParse(b['dataHora']?.toString() ?? '') ?? DateTime.now(),
+      duracaoMinutos: i(b['duracaoMinutos']),
+      profundidadeMaxima: d(b['profundidadeMaxima']),
+      profundidadeMedia: d(b['profundidadeMedia']),
+      visibilidade: d(b['visibilidade']),
+      temperaturaAgua: d(b['temperaturaAgua']),
+      corrente: b['corrente']?.toString(),
+      tipoAgua: b['tipoAgua']?.toString(),
+      tipoEntrada: b['tipoEntrada']?.toString(),
+      tipoGas: b['tipoGas']?.toString(),
+      pressaoInicial: i(b['pressaoInicial']),
+      pressaoFinal: i(b['pressaoFinal']),
+      notaExperiencia: d(b['notaExperiencia']),
+      notaLocal: d(b['notaLocal']),
+      comentarioLocal: b['comentarioLocal']?.toString(),
+      ownerId: ownerId,
+      ownerNome: ownerNome,
+      ownerUsername: ownerUsername,
+      observacoes: b['observacoes']?.toString(),
+      imagens: imagens,
+      pending: true,
+      localPhotos: localPhotos,
+      syncError: syncError,
+    );
+  }
 
   int? get consumoBar => (pressaoInicial != null && pressaoFinal != null)
       ? pressaoInicial! - pressaoFinal!

@@ -16,6 +16,8 @@ public interface DiveLogRepository extends JpaRepository<DiveLogModel, UUID> {
 
     long countByUserId(Long userId);
 
+    java.util.Optional<DiveLogModel> findByUserIdAndClientId(Long userId, java.util.UUID clientId);
+
     List<DiveLogModel> findByAvaliacaoIsNotNullAndNotaExperienciaIsNull();
 
     org.springframework.data.domain.Page<DiveLogModel> findByUserIdIn(

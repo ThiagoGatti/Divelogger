@@ -60,6 +60,33 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
 
   String _isoDate(DateTime d) => '${d.year}-${two(d.month)}-${two(d.day)}';
 
+  Future<void> _setRole(UserModel user, String role) async {
+    final making = role == 'ADMIN';
+    final ok = await confirmDialog(
+      context,
+      title: making ? 'Tornar administrador?' : 'Remover administrador?',
+      message: making
+          ? '${user.nomeCompleto} poderá cadastrar e editar locais e operadoras e gerenciar usuários e planos. '
+              'A pessoa precisa sair e entrar de novo no app para o acesso valer.'
+          : '${user.nomeCompleto} perderá o acesso de administrador.',
+      confirmLabel: making ? 'Tornar admin' : 'Remover admin',
+      destructive: !making,
+    );
+    if (!ok) return;
+
+    try {
+      final updated = await _api.updateRole(user.id, role);
+      if (!mounted) return;
+      setState(() {
+        final i = _users.indexWhere((u) => u.id == updated.id);
+        if (i >= 0) _users[i] = updated;
+      });
+      showSnack(context, making ? '${updated.nomeCompleto} agora é administrador.' : 'Acesso de administrador removido.');
+    } on ApiException catch (e) {
+      if (mounted) showSnack(context, e.message, error: true);
+    }
+  }
+
   Future<void> _setPlan(UserModel user, String plano, {int? days}) async {
     try {
       final expires = days == null ? null : _isoDate(DateTime.now().add(Duration(days: days)));
@@ -147,12 +174,19 @@ class _AdminUsersPageState extends State<AdminUsersPage> {
                                     if (v == 'p365') _setPlan(u, 'PREMIUM', days: 365);
                                     if (v == 'pforever') _setPlan(u, 'PREMIUM');
                                     if (v == 'free') _setPlan(u, 'FREE');
+                                    if (v == 'makeAdmin') _setRole(u, 'ADMIN');
+                                    if (v == 'removeAdmin') _setRole(u, 'USER');
                                   },
-                                  itemBuilder: (_) => const [
-                                    PopupMenuItem(value: 'p30', child: Text('Premium por 30 dias')),
-                                    PopupMenuItem(value: 'p365', child: Text('Premium por 1 ano')),
-                                    PopupMenuItem(value: 'pforever', child: Text('Premium sem expiração')),
-                                    PopupMenuItem(value: 'free', child: Text('Voltar para Free')),
+                                  itemBuilder: (_) => [
+                                    const PopupMenuItem(value: 'p30', child: Text('Premium por 30 dias')),
+                                    const PopupMenuItem(value: 'p365', child: Text('Premium por 1 ano')),
+                                    const PopupMenuItem(value: 'pforever', child: Text('Premium sem expiração')),
+                                    const PopupMenuItem(value: 'free', child: Text('Voltar para Free')),
+                                    const PopupMenuDivider(),
+                                    if (u.isAdmin)
+                                      const PopupMenuItem(value: 'removeAdmin', child: Text('Remover administrador'))
+                                    else
+                                      const PopupMenuItem(value: 'makeAdmin', child: Text('Tornar administrador')),
                                   ],
                                 ),
                               ),

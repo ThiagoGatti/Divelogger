@@ -15,6 +15,7 @@ class DiveLogCard extends StatelessWidget {
     return ImageSideCard(
       imageUrl: log.coverUrl,
       cacheKey: log.imagens.isEmpty ? null : log.imagens.first.id,
+      localPath: log.imagens.isEmpty && log.localPhotos.isNotEmpty ? log.localPhotos.first : null,
       placeholderIcon: Icons.scuba_diving,
       minHeight: 108,
       onTap: onTap,
@@ -44,6 +45,10 @@ class DiveLogCard extends StatelessWidget {
               if (log.duracaoMinutos != null)
                 InfoChip(icon: Icons.timer_outlined, text: formatDuration(log.duracaoMinutos), color: DiverrTheme.secondary),
               if ((log.notaExperiencia ?? 0) > 0) RatingStars(value: log.notaExperiencia!, size: 15),
+              if (log.pending && log.syncError != null)
+                const InfoChip(icon: Icons.error_outline, text: 'Erro ao sincronizar', color: DiverrTheme.danger)
+              else if (log.pending)
+                const InfoChip(icon: Icons.cloud_upload_outlined, text: 'Aguardando envio', color: DiverrTheme.warning),
             ],
           ),
         ],

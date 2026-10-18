@@ -32,12 +32,17 @@ class ImageService {
 
   /// [basePath] ex.: /api/dive-logs/{id} ou /api/dive-sites/{id}.
   /// Retorna o JSON atualizado do recurso (com a nova imagem).
-  Future<Map<String, dynamic>> upload(String basePath, XFile file) async {
+  Future<Map<String, dynamic>> upload(
+    String basePath,
+    XFile file, {
+    String? presignPath,
+    String? registerPath,
+  }) async {
     final bytes = await file.readAsBytes();
     final contentType = _contentTypeOf(file);
 
     final presign = await _api.post(
-      '$basePath/images/presign',
+      presignPath ?? '$basePath/images/presign',
       {'contentType': contentType, 'sizeBytes': bytes.length},
     );
 
@@ -65,7 +70,7 @@ class ImageService {
       throw ApiException('Sem conexão para enviar a foto.');
     }
 
-    return _api.post('$basePath/images', {'key': key});
+    return _api.post(registerPath ?? '$basePath/images', {'key': key});
   }
 
   String _contentTypeOf(XFile file) {

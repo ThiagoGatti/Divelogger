@@ -75,6 +75,15 @@ public class DiveSiteController {
         return ResponseEntity.ok(service.setAtivo(id, dto.ativo()));
     }
 
+    /** Operadoras que atuam no local (ADMIN: PUT em /api/dive-sites/** já é restrito). */
+    @PutMapping("/{id}/operators")
+    public ResponseEntity<DiveSiteResponseDto> setOperators(
+            @PathVariable UUID id,
+            @Valid @RequestBody com.log.diverr.diver.operators.OperatorDtos.OperatorIdsDto dto
+    ) {
+        return ResponseEntity.ok(service.setOperators(id, dto.operatorIds()));
+    }
+
     // ---- imagens ----
 
     @PostMapping("/{id}/images/presign")

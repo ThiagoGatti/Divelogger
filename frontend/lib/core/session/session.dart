@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../features/auth/data/entitlements.dart';
 import '../../features/auth/data/user_model.dart';
+import '../offline/local_store.dart';
 import 'token_storage.dart';
 
 /// Sessão do usuário: token + usuário (+ permissões do plano), persistidos com segurança.
@@ -24,8 +25,13 @@ class AppSession {
   /// Incrementa quando usuário/plano mudam (ex.: GET /api/me). Telas escutam para se redesenhar.
   final ValueNotifier<int> changed = ValueNotifier<int>(0);
 
-  bool get isLoggedIn =>
-      accessToken != null && currentUser != null && !_isExpired;
+  /// Há sessão salva no aparelho. Um token vencido NÃO desloga: o app continua abrindo offline com os
+  /// dados salvos. Quando voltar a internet, a primeira chamada recebe 401 e o app pede novo login
+  /// (a fila de mergulhos pendentes é preservada).
+  bool get isLoggedIn => accessToken != null && currentUser != null;
+
+  /// Token já vencido (informativo).
+  bool get tokenExpired => _isExpired;
 
   bool get isAdmin => currentUser?.isAdmin ?? false;
 
@@ -39,17 +45,16 @@ class AppSession {
     final saved = await _storage.read();
     if (saved.token == null || saved.userJson == null) return;
 
-    if (saved.expiresAt != null && DateTime.now().isAfter(saved.expiresAt!)) {
-      await _storage.clear();
-      return;
-    }
-
     try {
       currentUser = UserModel.fromJson(
         Map<String, dynamic>.from(jsonDecode(saved.userJson!) as Map),
       );
       accessToken = saved.token;
       _expiresAt = saved.expiresAt;
+
+      // permissões do plano da última vez que o servidor respondeu (para funcionar offline)
+      final raw = await LocalStore.readJson('entitlements_${currentUser!.id}.json');
+      if (raw is Map) entitlements = Entitlements.fromJson(Map<String, dynamic>.from(raw));
     } catch (_) {
       await _storage.clear();
     }
@@ -77,6 +82,7 @@ class AppSession {
   Future<void> updateFromMe(UserModel user, Entitlements e) async {
     currentUser = user;
     entitlements = e;
+    await LocalStore.writeJson('entitlements_${user.id}.json', e.toJson());
     if (accessToken != null && _expiresAt != null) {
       await _storage.save(
         token: accessToken!,

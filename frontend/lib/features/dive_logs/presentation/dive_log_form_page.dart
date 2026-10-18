@@ -15,6 +15,7 @@ import '../../auth/data/me_api.dart';
 import '../../home/data/dive_site_model.dart';
 import '../data/dive_log_model.dart';
 import '../data/dive_logs_api.dart';
+import '../data/dive_logs_repository.dart';
 import 'dive_site_picker_page.dart';
 
 /// Abre o formulário respeitando o limite do plano. Retorna true se algo foi salvo.
@@ -288,35 +289,39 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
     });
 
     try {
-      final saved = _isEdit
-          ? await _api.update(widget.existing!.id, _buildBody())
-          : await _api.create(_buildBody());
-
-      var failed = 0;
-      for (var i = 0; i < _newImages.length; i++) {
-        if (mounted) setState(() => _progress = 'Enviando foto ${i + 1} de ${_newImages.length}…');
-        try {
-          await _images.upload('/api/dive-logs/${saved.id}', _newImages[i].file);
-        } on ApiException {
-          failed++;
-        }
-      }
+      final result = await DiveLogsRepository.instance.save(
+        existing: widget.existing,
+        body: _buildBody(),
+        siteNome: _siteName ?? '',
+        newPhotos: _newImages.map((p) => p.file).toList(),
+        onProgress: (msg) {
+          if (mounted) setState(() => _progress = msg);
+        },
+      );
 
       AppEvents.notifyDiveLogsChanged();
-      await MeApi().refresh();
+      // registrar um mergulho marca "Já mergulhei" e tira o local de "Quero mergulhar"
+      AppEvents.notifyListsChanged();
+      MeApi().refresh(); // sem await: offline não deve travar o salvar
 
       if (!mounted) return;
       navigator.pop(true);
 
+      final String message;
+      if (result.log.pending) {
+        message = 'Sem conexão: o mergulho foi salvo no aparelho e será enviado quando a internet voltar.';
+      } else if (result.queued) {
+        message = 'Mergulho salvo. As fotos serão enviadas quando a internet voltar.';
+      } else if (result.photosFailed > 0) {
+        message = 'Mergulho salvo, mas ${result.photosFailed} foto(s) não foram enviadas (limite do plano ou erro). '
+            'Você pode adicioná-las de novo.';
+      } else {
+        message = _isEdit ? 'Mergulho atualizado!' : 'Mergulho registrado!';
+      }
+
       messenger
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(
-          content: Text(
-            failed > 0
-                ? 'Mergulho salvo, mas $failed foto(s) não foram enviadas. Abra o mergulho para tentar de novo.'
-                : (_isEdit ? 'Mergulho atualizado!' : 'Mergulho registrado!'),
-          ),
-        ));
+        ..showSnackBar(SnackBar(content: Text(message)));
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);

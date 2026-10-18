@@ -131,7 +131,7 @@ class StatsTab extends StatelessWidget {
             Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
             const SizedBox(height: 16),
             SizedBox(
-              height: 130,
+              height: 150,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -143,7 +143,7 @@ class StatsTab extends StatelessWidget {
                           Text('${m.$2}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
                           const SizedBox(height: 4),
                           Container(
-                            height: 8 + 80.0 * (m.$2 / maxCount),
+                            height: 6 + 84.0 * (m.$2 / maxCount),
                             margin: const EdgeInsets.symmetric(horizontal: 6),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
@@ -203,7 +203,7 @@ class StatsTab extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 12),
-        _bars('Mergulhos por mês', _byMonth),
+        _MonthlyChart(logs: logs),
         if (years.length > 1) ...[
           const SizedBox(height: 12),
           _bars('Mergulhos por ano', years.reversed.toList()),
@@ -279,6 +279,128 @@ class StatsTab extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Mergulhos por mês de um ano escolhido (12 colunas). Os anos disponíveis vêm dos próprios mergulhos.
+class _MonthlyChart extends StatefulWidget {
+  final List<DiveLogModel> logs;
+  const _MonthlyChart({required this.logs});
+
+  @override
+  State<_MonthlyChart> createState() => _MonthlyChartState();
+}
+
+class _MonthlyChartState extends State<_MonthlyChart> {
+  late List<int> _years;
+  late int _year;
+
+  @override
+  void initState() {
+    super.initState();
+    _computeYears();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MonthlyChart old) {
+    super.didUpdateWidget(old);
+    final previous = _year;
+    _computeYears();
+    if (_years.contains(previous)) _year = previous;
+  }
+
+  void _computeYears() {
+    final set = widget.logs.map((l) => l.dataHora.year).toSet();
+    final now = DateTime.now().year;
+    set.add(now);
+    _years = set.toList()..sort((a, b) => b.compareTo(a));
+    _year = now;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final counts = List<int>.filled(12, 0);
+    for (final l in widget.logs) {
+      if (l.dataHora.year == _year) counts[l.dataHora.month - 1]++;
+    }
+    final maxCount = counts.fold(1, (a, b) => a > b ? a : b);
+    final total = counts.fold(0, (a, b) => a + b);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Mergulhos por mês', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+                Text('$total em $_year', style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5)),
+              ],
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 38,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  for (final y in _years)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text('$y'),
+                        selected: y == _year,
+                        onSelected: (_) => setState(() => _year = y),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 150,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  for (var i = 0; i < 12; i++)
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            counts[i] == 0 ? '' : '${counts[i]}',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 10.5),
+                          ),
+                          const SizedBox(height: 2),
+                          Container(
+                            height: counts[i] == 0 ? 3 : 6 + 84.0 * (counts[i] / maxCount),
+                            margin: const EdgeInsets.symmetric(horizontal: 2),
+                            decoration: BoxDecoration(
+                              gradient: counts[i] == 0
+                                  ? null
+                                  : const LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [DiverrTheme.primary, DiverrTheme.secondary],
+                                    ),
+                              color: counts[i] == 0 ? DiverrTheme.dark.withOpacity(.08) : null,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(kMonthsShort[i], style: const TextStyle(fontSize: 9.5, color: DiverrTheme.muted)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

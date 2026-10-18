@@ -6,6 +6,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/session/session.dart';
 import '../../../core/ui/widgets.dart';
 import '../../admin/presentation/admin_users_page.dart';
+import '../../operators/presentation/operators_page.dart';
 import '../../auth/data/me_api.dart';
 import '../../auth/data/user_model.dart';
 import '../../landing/presentation/landing_page.dart';
@@ -28,9 +29,9 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _saving = false;
 
   static const _visibilityHelp = {
-    'PRIVATE': 'Ninguém além de você verá seus mergulhos.',
+    'PRIVATE': 'Ninguém além de você vê seus mergulhos.',
     'FRIENDS': 'Só quem você segue e que também te segue de volta (amigos).',
-    'FOLLOWERS': 'Qualquer seguidor pode vêr seus mergulhos',
+    'FOLLOWERS': 'Qualquer pessoa que te segue vê seus mergulhos, como no Letterboxd. (padrão)',
     'PUBLIC': 'Qualquer usuário do Diverr pode ver seus mergulhos.',
   };
 
@@ -181,6 +182,18 @@ class _SettingsPageState extends State<SettingsPage> {
                 leading: const Icon(Icons.manage_accounts_outlined, color: DiverrTheme.primary),
                 title: const Text('Usuários e planos', style: TextStyle(fontWeight: FontWeight.w700)),
                 subtitle: const Text('Conceder ou remover o Premium'),
+                trailing: const Icon(Icons.chevron_right),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const OperatorsPage()),
+                ),
+                leading: const Icon(Icons.storefront_outlined, color: DiverrTheme.primary),
+                title: const Text('Operadoras', style: TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: const Text('Cadastrar operadoras e vincular aos locais'),
                 trailing: const Icon(Icons.chevron_right),
               ),
             ),

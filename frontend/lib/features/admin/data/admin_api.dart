@@ -12,6 +12,12 @@ class AdminApi {
         .toList();
   }
 
+  /// Concede ou remove o perfil ADMIN (role: 'ADMIN' ou 'USER').
+  Future<UserModel> updateRole(int userId, String role) async {
+    final json = await _api.patch('/api/admin/users/$userId/role', {'role': role});
+    return UserModel.fromJson(json);
+  }
+
   /// [expiresAt] no formato yyyy-MM-dd (só vale para PREMIUM; null = sem expiração).
   Future<UserModel> updatePlan(int userId, String plano, {String? expiresAt}) async {
     final json = await _api.patch(

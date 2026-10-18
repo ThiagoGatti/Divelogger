@@ -1,5 +1,6 @@
 import '../../../core/network/api_client.dart';
 import '../../../core/session/session.dart';
+import '../../../core/offline/sync_service.dart';
 import 'me_api.dart';
 import 'user_model.dart';
 
@@ -28,6 +29,7 @@ class AuthApi {
       user: user,
     );
     await MeApi(api: _api).refresh();
+    SyncService.instance.scheduleSync(); // envia mergulhos feitos offline
     return AppSession.instance.currentUser ?? user;
   }
 

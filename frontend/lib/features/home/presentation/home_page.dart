@@ -9,6 +9,7 @@ import 'dive_site_details_page.dart';
 import 'dive_sites_page.dart';
 import 'map_page.dart';
 import 'profile_page.dart';
+import 'sync_banner.dart';
 import '../../../core/events.dart';
 
 class HomePage extends StatefulWidget {
@@ -85,7 +86,12 @@ class _HomePageState extends State<HomePage> {
       builder: (context, _, __) {
         return Scaffold(
           // IndexedStack mantém o estado de cada aba (mapa, listas) ao trocar de aba.
-          body: IndexedStack(index: _index, children: _pages),
+          body: Column(
+            children: [
+              Expanded(child: IndexedStack(index: _index, children: _pages)),
+              const SyncBanner(),
+            ],
+          ),
           floatingActionButton: _fab(),
           bottomNavigationBar: NavigationBar(
             selectedIndex: _index,

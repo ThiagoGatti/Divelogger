@@ -19,7 +19,8 @@ class ApiException implements Exception {
 
   bool get isUnauthorized => statusCode == 401;
   bool get isForbidden => statusCode == 403;
-  bool get isNetwork => statusCode == null;
+  /// Sem resposta do servidor (offline, timeout, DNS). Erro de configuração do build não conta como rede.
+  bool get isNetwork => statusCode == null && code != 'CONFIG';
 
   @override
   String toString() => message;
@@ -36,7 +37,7 @@ class ApiClient {
       return Uri.parse('${ApiConfig.baseUrl}$path');
     } on StateError catch (e) {
       // Build sem URL do servidor / release com HTTP: mostra a causa real em vez de "sem conexão".
-      throw ApiException(e.message);
+      throw ApiException(e.message, code: 'CONFIG');
     }
   }
 

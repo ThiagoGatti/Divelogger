@@ -72,25 +72,33 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/dive-sites",
-                                "/api/dive-sites/**"
+                                "/api/dive-sites/**",
+                                "/api/operators",
+                                "/api/operators/**"
                         ).hasRole("ADMIN")
 
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/dive-sites",
-                                "/api/dive-sites/**"
+                                "/api/dive-sites/**",
+                                "/api/operators",
+                                "/api/operators/**"
                         ).hasRole("ADMIN")
 
                         .requestMatchers(
                                 HttpMethod.PATCH,
                                 "/api/dive-sites",
-                                "/api/dive-sites/**"
+                                "/api/dive-sites/**",
+                                "/api/operators",
+                                "/api/operators/**"
                         ).hasRole("ADMIN")
 
                         .requestMatchers(
                                 HttpMethod.DELETE,
                                 "/api/dive-sites",
-                                "/api/dive-sites/**"
+                                "/api/dive-sites/**",
+                                "/api/operators",
+                                "/api/operators/**"
                         ).hasRole("ADMIN")
 
                         .anyRequest().authenticated()

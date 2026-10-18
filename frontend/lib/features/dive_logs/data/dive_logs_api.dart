@@ -8,6 +8,9 @@ class DiveLogsApi {
 
   static DiveLogModel _one(Map<String, dynamic> json) => DiveLogModel.fromJson(json);
 
+  /// Lista crua (JSON) dos meus mergulhos, para guardar em cache.
+  Future<List<dynamic>> findMineRaw() => _api.getList('/api/dive-logs/me');
+
   Future<List<DiveLogModel>> findMine() async {
     final data = await _api.getList('/api/dive-logs/me');
     return data
