@@ -148,7 +148,6 @@ public class OperatorService {
 
     private static void apply(OperatorModel o, OperatorRequestDto dto) {
         o.setNome(dto.nome().trim());
-        o.setEndereco(dto.endereco() == null || dto.endereco().isBlank() ? null : dto.endereco().trim());
         o.setUpdatedAt(LocalDateTime.now());
     }
 
@@ -165,6 +164,6 @@ public class OperatorService {
                                 .collect(Collectors.joining(", ")),
                         site.isAtivo()))
                 .toList();
-        return new OperatorDetailDto(s.id(), s.nome(), s.endereco(), s.photoUrl(), s.photoId(), s.ativo(), sites);
+        return new OperatorDetailDto(s.id(), s.nome(), s.photoUrl(), s.photoId(), s.ativo(), sites);
     }
 }

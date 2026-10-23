@@ -1,7 +1,6 @@
 class OperatorSummary {
   final String id;
   final String nome;
-  final String? endereco;
   final String? photoUrl;
   final String? photoId;
   final bool ativo;
@@ -9,7 +8,6 @@ class OperatorSummary {
   const OperatorSummary({
     required this.id,
     required this.nome,
-    this.endereco,
     this.photoUrl,
     this.photoId,
     this.ativo = true,
@@ -18,7 +16,6 @@ class OperatorSummary {
   factory OperatorSummary.fromJson(Map<String, dynamic> j) => OperatorSummary(
         id: j['id']?.toString() ?? '',
         nome: j['nome']?.toString() ?? '',
-        endereco: j['endereco'] as String?,
         photoUrl: j['photoUrl'] as String?,
         photoId: j['photoId']?.toString(),
         ativo: j['ativo'] as bool? ?? true,
@@ -52,7 +49,6 @@ class SiteRef {
 class OperatorDetail {
   final String id;
   final String nome;
-  final String? endereco;
   final String? photoUrl;
   final String? photoId;
   final bool ativo;
@@ -61,7 +57,6 @@ class OperatorDetail {
   const OperatorDetail({
     required this.id,
     required this.nome,
-    this.endereco,
     this.photoUrl,
     this.photoId,
     required this.ativo,
@@ -71,7 +66,6 @@ class OperatorDetail {
   factory OperatorDetail.fromJson(Map<String, dynamic> j) => OperatorDetail(
         id: j['id']?.toString() ?? '',
         nome: j['nome']?.toString() ?? '',
-        endereco: j['endereco'] as String?,
         photoUrl: j['photoUrl'] as String?,
         photoId: j['photoId']?.toString(),
         ativo: j['ativo'] as bool? ?? true,

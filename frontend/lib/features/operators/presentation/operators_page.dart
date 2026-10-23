@@ -71,7 +71,7 @@ class _OperatorsPageState extends State<OperatorsPage> {
   Widget build(BuildContext context) {
     final q = _query.trim().toLowerCase();
     final items = _items
-        .where((o) => q.isEmpty || o.nome.toLowerCase().contains(q) || (o.endereco ?? '').toLowerCase().contains(q))
+        .where((o) => q.isEmpty || o.nome.toLowerCase().contains(q))
         .toList();
 
     return Scaffold(
@@ -123,10 +123,6 @@ class _OperatorsPageState extends State<OperatorsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(o.nome, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                          if (o.endereco != null) ...[
-                            const SizedBox(height: 4),
-                            Text(o.endereco!, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5)),
-                          ],
                           if (!o.ativo) ...[
                             const SizedBox(height: 6),
                             const InfoChip(icon: Icons.block, text: 'Desativada', color: DiverrTheme.danger),

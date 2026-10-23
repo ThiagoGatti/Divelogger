@@ -24,9 +24,6 @@ public class OperatorModel {
     @Column(nullable = false, length = 150)
     private String nome;
 
-    @Column(length = 300)
-    private String endereco;
-
     /** Chave do objeto no S3 (uma foto por operadora). */
     @Column(length = 300)
     private String photoKey;

@@ -23,6 +23,7 @@ import '../../reviews/presentation/site_reviews_section.dart';
 import '../data/dive_site_model.dart';
 import '../data/dive_sites_api.dart';
 import 'create_dive_site_page.dart';
+import 'site_mini_map.dart';
 
 /// Detalhes do Dive Site. Admin pode editar, desativar e gerenciar fotos.
 /// Ao voltar devolve true se o site mudou (a lista recarrega).
@@ -58,6 +59,7 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
     _site = widget.site;
     _loadMyLogs();
     _loadWishlist();
+    _refreshSite();
     AppEvents.listsChanged.addListener(_loadWishlist);
     AppEvents.diveLogsChanged.addListener(_onDiveLogsChanged);
   }
@@ -72,6 +74,17 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
   void _onDiveLogsChanged() {
     _loadMyLogs();
     _loadWishlist(); // registrar um mergulho aqui marca "Já mergulhei" e tira de "Quero mergulhar"
+  }
+
+  /// Ao abrir, busca os dados mais recentes do local (operadoras, nota média, fotos). A lista de onde
+  /// viemos pode estar desatualizada (ex.: o admin acabou de vincular uma operadora).
+  Future<void> _refreshSite() async {
+    try {
+      final fresh = await _sitesApi.findById(_site.id);
+      if (mounted) setState(() => _site = fresh);
+    } on ApiException {
+      // offline ou sem acesso: mantém os dados que já tem
+    }
   }
 
   /// Carrega o estado de "Quero mergulhar" e "Já mergulhei" de forma INDEPENDENTE:
@@ -315,7 +328,6 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
                                     }
                                   }),
                                   title: Text(o.nome, style: const TextStyle(fontWeight: FontWeight.w700)),
-                                  subtitle: o.endereco == null ? null : Text(o.endereco!, maxLines: 1, overflow: TextOverflow.ellipsis),
                                   activeColor: DiverrTheme.primary,
                                 ),
                             ],
@@ -666,24 +678,17 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
                         ],
                         const SizedBox(height: 22),
                         const SectionTitle('Localização'),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(DiverrTheme.radius),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.my_location, color: DiverrTheme.primary),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  '${s.latitude.toStringAsFixed(6)}, ${s.longitude.toStringAsFixed(6)}',
-                                  style: const TextStyle(fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                            ],
-                          ),
+                        SiteMiniMap(latitude: s.latitude, longitude: s.longitude),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.my_location, size: 16, color: DiverrTheme.muted),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${s.latitude.toStringAsFixed(6)}, ${s.longitude.toStringAsFixed(6)}',
+                              style: const TextStyle(fontWeight: FontWeight.w700, color: DiverrTheme.muted, fontSize: 13),
+                            ),
+                          ],
                         ),
                         if (s.extended != null && !s.extended!.isEmpty) ...[
                           const SizedBox(height: 22),
@@ -731,10 +736,6 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(o.nome, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w900)),
-                                      if (o.endereco != null) ...[
-                                        const SizedBox(height: 3),
-                                        Text(o.endereco!, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: DiverrTheme.muted, fontSize: 12.5)),
-                                      ],
                                     ],
                                   ),
                                 ),

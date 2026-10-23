@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../app/theme.dart';
+import '../../../core/events.dart';
 import '../../../core/images/image_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/ui/widgets.dart';
@@ -26,7 +27,6 @@ class _OperatorFormPageState extends State<OperatorFormPage> {
   final _formKey = GlobalKey<FormState>();
 
   late final TextEditingController _nome = TextEditingController(text: widget.existing?.nome ?? '');
-  late final TextEditingController _endereco = TextEditingController(text: widget.existing?.endereco ?? '');
 
   late Set<String> _siteIds = {...?widget.existing?.sites.map((s) => s.id)};
   late Map<String, String> _siteNames = {for (final s in widget.existing?.sites ?? const <SiteRef>[]) s.id: s.nome};
@@ -42,7 +42,6 @@ class _OperatorFormPageState extends State<OperatorFormPage> {
   @override
   void dispose() {
     _nome.dispose();
-    _endereco.dispose();
     super.dispose();
   }
 
@@ -105,13 +104,12 @@ class _OperatorFormPageState extends State<OperatorFormPage> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final nome = _nome.text.trim();
-    final endereco = _endereco.text.trim().isEmpty ? null : _endereco.text.trim();
 
     setState(() => _saving = true);
     try {
       var detail = _isEdit
-          ? await _api.update(widget.existing!.id, nome, endereco)
-          : await _api.create(nome, endereco);
+          ? await _api.update(widget.existing!.id, nome)
+          : await _api.create(nome);
 
       if (_isEdit && _ativo != widget.existing!.ativo) {
         detail = await _api.setAtivo(detail.id, _ativo);
@@ -133,6 +131,8 @@ class _OperatorFormPageState extends State<OperatorFormPage> {
           photoError = e.message;
         }
       }
+
+      AppEvents.notifyDiveSitesChanged(); // os locais vinculados passam a mostrar a operadora
 
       if (!mounted) return;
       Navigator.pop(context, detail);
@@ -215,13 +215,6 @@ class _OperatorFormPageState extends State<OperatorFormPage> {
               textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(labelText: 'Nome da operadora', prefixIcon: Icon(Icons.storefront_outlined)),
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe o nome' : null,
-            ),
-            const SizedBox(height: 6),
-            TextFormField(
-              controller: _endereco,
-              maxLength: 300,
-              maxLines: 2,
-              decoration: const InputDecoration(labelText: 'Endereço', prefixIcon: Icon(Icons.place_outlined), alignLabelWithHint: true),
             ),
             const SectionTitle('Onde atua'),
             Wrap(

@@ -1,3 +1,4 @@
 {
-  "API_BASE_URL": "https://api.SEU-DOMINIO.com"
+  "API_BASE_URL": "https://api.SEU-DOMINIO.com",
+  "MAPTILER_KEY": "VTFWjxivmkcmtcYr7XMW"
 }

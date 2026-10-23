@@ -84,17 +84,6 @@ class _OperatorDetailsPageState extends State<OperatorDetailsPage> {
                     ),
                     const SizedBox(height: 16),
                     Text(op.nome, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
-                    if (op.endereco != null) ...[
-                      const SizedBox(height: 10),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.place_outlined, size: 20, color: DiverrTheme.primary),
-                          const SizedBox(width: 8),
-                          Expanded(child: Text(op.endereco!, style: const TextStyle(height: 1.4))),
-                        ],
-                      ),
-                    ],
                     const SectionTitle('Atua em'),
                     if (op.sites.isEmpty)
                       const Text('Ainda não vinculada a nenhum local.', style: TextStyle(color: DiverrTheme.muted))

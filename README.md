@@ -188,9 +188,26 @@ O app funciona sem internet para o que importa no barco ou em locais remotos:
 Limites atuais: reações, comentários, feed, listas, avaliações e o mapa (as imagens do mapa) exigem internet; fotos já
 vistas ou salvas offline continuam aparecendo.
 
+## Mapa (MapTiler) e coordenadas dos locais
+
+O mapa usa o **MapTiler** (satélite, híbrido e mapa de ruas). A chave entra na hora de gerar o app, nos arquivos
+`frontend/env/*.json` (`MAPTILER_KEY`) ou com `--dart-define=MAPTILER_KEY=...`. Sem chave, o app cai no OpenStreetMap
+(sem satélite), só para desenvolvimento.
+
+1. Crie a conta em maptiler.com, gere uma **chave de API** (*Account > API keys*) e cole em `MAPTILER_KEY`.
+2. O **plano gratuito é para uso não comercial** (desenvolvimento e testes). Para publicar nas lojas, assine um plano pago.
+3. A chave fica dentro do app (qualquer app móvel é assim): use uma chave exclusiva deste app, ative os alertas de uso
+   no painel e troque a chave se houver abuso.
+4. A atribuição "© MapTiler © OpenStreetMap contributors" aparece sobre o mapa e não deve ser removida.
+
+**Como marcar o ponto de um Dive Site (admin):** no formulário do local, *Marcar o ponto no mapa (satélite)*. O mapa se
+move sob uma cruz fixa e as coordenadas mostradas são as do ponto sob a cruz (6 casas decimais). Dá para colar
+coordenadas de outro app (`-25.4991, -48.3202` ou `25°29'56"S 48°19'12"W`) e usar o GPS (leitura nova, com a precisão
+mostrada em metros). Na página do local há um mini mapa para conferir a posição.
+
 ## Operadoras
 
-ADMIN cadastra operadoras (**nome, foto e endereço**) em Perfil, Configurações, Operadoras e as vincula aos locais onde
+ADMIN cadastra operadoras (**nome e foto**) em Perfil, Configurações, Operadoras e as vincula aos locais onde
 atuam (pela própria operadora ou na página do local, botão *Gerenciar*). Todos os usuários veem as operadoras na página
 do Dive Site e podem abrir a página da operadora.
 

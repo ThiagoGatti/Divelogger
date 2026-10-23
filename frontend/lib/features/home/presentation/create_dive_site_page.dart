@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/session/session.dart';
+import '../../../core/maps/coordinate_parser.dart';
 import '../data/dive_site_model.dart';
+import 'location_picker_page.dart';
 import '../data/dive_sites_api.dart';
 
 class CreateDiveSitePage extends StatefulWidget {
@@ -32,7 +34,6 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
 
   String? _tipo;
   bool _saving = false;
-  bool _gettingLocation = false;
 
   String? _nivel;
 
@@ -167,202 +168,27 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
   }
 
 
-  Future<void> _getCurrentLocation() async {
-    if (_gettingLocation) {
-      return;
-    }
-
+  /// Abre o mapa (satélite) com uma cruz no centro: o ponto sob a cruz é o que vai para os campos.
+  Future<void> _pickOnMap() async {
+    final current = CoordinateParser.tryPair(_latitudeController.text, _longitudeController.text);
+    final result = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute(builder: (_) => LocationPickerPage(initial: current)),
+    );
+    if (result == null || !mounted) return;
     setState(() {
-      _gettingLocation = true;
+      _latitudeController.text = result.latitude.toStringAsFixed(6);
+      _longitudeController.text = result.longitude.toStringAsFixed(6);
     });
-
-    try {
-
-
-      final serviceEnabled =
-      await Geolocator.isLocationServiceEnabled();
-
-      if (!serviceEnabled) {
-        if (!mounted) return;
-
-        _showError(
-          'A localização do celular está desligada. '
-              'Ative o GPS/localização e tente novamente.',
-        );
-
-        return;
-      }
-
-
-
-      LocationPermission permission =
-      await Geolocator.checkPermission();
-
-      if (permission == LocationPermission.denied) {
-        permission =
-        await Geolocator.requestPermission();
-
-        if (permission == LocationPermission.denied) {
-          if (!mounted) return;
-
-          _showError(
-            'A permissão para acessar sua localização foi negada.',
-          );
-
-          return;
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        if (!mounted) return;
-
-        _showError(
-          'A permissão de localização foi bloqueada permanentemente. '
-              'Ative a localização nas configurações do aplicativo.',
-        );
-
-        return;
-      }
-
-      debugPrint(
-        'PERMISSÃO DE LOCALIZAÇÃO: $permission',
-      );
-
-      // ============================================================
-      // 3. PRIMEIRO TENTA UMA LOCALIZAÇÃO JÁ CONHECIDA
-      // ============================================================
-
-      Position? position =
-      await Geolocator.getLastKnownPosition();
-
-      if (position != null) {
-        debugPrint(
-          'Usando última localização conhecida:',
-        );
-
-        debugPrint(
-          'Latitude: ${position.latitude}',
-        );
-
-        debugPrint(
-          'Longitude: ${position.longitude}',
-        );
-
-        if (!mounted) return;
-
-        setState(() {
-          _latitudeController.text =
-              position!.latitude.toStringAsFixed(6);
-
-          _longitudeController.text =
-              position.longitude.toStringAsFixed(6);
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Localização obtida com sucesso!',
-            ),
-          ),
-        );
-
-        return;
-      }
-      debugPrint(
-        'Nenhuma localização anterior encontrada.',
-      );
-
-      debugPrint(
-        'Solicitando localização atual...',
-      );
-
-      position =
-      await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-        ),
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () {
-          throw Exception(
-            'O GPS demorou muito para responder.',
-          );
-        },
-      );
-
-      // ============================================================
-      // 5. RECEBEU A LOCALIZAÇÃO
-      // ============================================================
-
-      debugPrint(
-        'LOCALIZAÇÃO RECEBIDA!',
-      );
-
-      debugPrint(
-        'Latitude: ${position.latitude}',
-      );
-
-      debugPrint(
-        'Longitude: ${position.longitude}',
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _latitudeController.text =
-            position!.latitude.toStringAsFixed(6);
-
-        _longitudeController.text =
-            position.longitude.toStringAsFixed(6);
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Localização obtida com sucesso!',
-          ),
-        ),
-      );
-    } on LocationServiceDisabledException {
-      if (!mounted) return;
-
-      _showError(
-        'O serviço de localização está desativado.',
-      );
-    } on PermissionDeniedException {
-      if (!mounted) return;
-
-      _showError(
-        'Permissão de localização negada.',
-      );
-    } catch (e) {
-      debugPrint(
-        'ERRO AO OBTER LOCALIZAÇÃO:',
-      );
-
-      debugPrint(
-        e.toString(),
-      );
-
-      if (!mounted) return;
-
-      _showError(
-        e.toString().replaceFirst(
-          'Exception: ',
-          '',
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _gettingLocation = false;
-        });
-      }
-    }
   }
 
-  // ============================================================
-  // CRIA O DIVE SITE
+  /// Se o admin colar "lat, lng" (de outro app) no campo de latitude, separa nos dois campos.
+  void _splitIfPair(String value) {
+    final pair = CoordinateParser.parsePair(value);
+    if (pair == null) return;
+    _latitudeController.text = pair.lat.toStringAsFixed(6);
+    _longitudeController.text = pair.lng.toStringAsFixed(6);
+  }
+
   // ============================================================
 
   Future<void> _createDiveSite() async {
@@ -773,6 +599,7 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
                 Expanded(
                   child: TextFormField(
                     controller: _latitudeController,
+              onChanged: _splitIfPair,
                     keyboardType:
                     const TextInputType.numberWithOptions(
                       decimal: true,
@@ -826,44 +653,10 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
             // BOTÃO DE LOCALIZAÇÃO AUTOMÁTICA
             // ==================================================
 
-            SizedBox(
-              height: 50,
-              child: OutlinedButton.icon(
-                onPressed: _gettingLocation
-                    ? null
-                    : _getCurrentLocation,
-                icon: _gettingLocation
-                    ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child:
-                  CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                  ),
-                )
-                    : const Icon(
-                  Icons.my_location,
-                ),
-                label: Text(
-                  _gettingLocation
-                      ? 'Obtendo localização...'
-                      : 'Usar minha localização atual',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor:
-                  DiverrTheme.primary,
-                  side: const BorderSide(
-                    color: DiverrTheme.primary,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius:
-                    BorderRadius.circular(14),
-                  ),
-                ),
-              ),
+            OutlinedButton.icon(
+              onPressed: _pickOnMap,
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Marcar o ponto no mapa (satélite)'),
             ),
 
             const SizedBox(height: 8),

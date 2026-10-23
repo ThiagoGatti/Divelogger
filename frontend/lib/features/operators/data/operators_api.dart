@@ -20,11 +20,11 @@ class OperatorsApi {
   Future<OperatorDetail> get(String id) async =>
       OperatorDetail.fromJson(await _api.get('/api/operators/$id'));
 
-  Future<OperatorDetail> create(String nome, String? endereco) async =>
-      OperatorDetail.fromJson(await _api.post('/api/operators', {'nome': nome, 'endereco': endereco}));
+  Future<OperatorDetail> create(String nome) async =>
+      OperatorDetail.fromJson(await _api.post('/api/operators', {'nome': nome}));
 
-  Future<OperatorDetail> update(String id, String nome, String? endereco) async =>
-      OperatorDetail.fromJson(await _api.put('/api/operators/$id', {'nome': nome, 'endereco': endereco}));
+  Future<OperatorDetail> update(String id, String nome) async =>
+      OperatorDetail.fromJson(await _api.put('/api/operators/$id', {'nome': nome}));
 
   Future<OperatorDetail> setAtivo(String id, bool ativo) async =>
       OperatorDetail.fromJson(await _api.patch('/api/operators/$id/ativo', {'ativo': ativo}));

@@ -15,10 +15,7 @@ public final class OperatorDtos {
     public record OperatorRequestDto(
             @NotBlank(message = "Nome da operadora é obrigatório")
             @Size(max = 150, message = "Nome muito longo (máx. 150)")
-            String nome,
-
-            @Size(max = 300, message = "Endereço muito longo (máx. 300)")
-            String endereco
+            String nome
     ) {}
 
     public record OperatorStatusDto(@NotNull(message = "Informe o status") Boolean ativo) {}
@@ -31,7 +28,6 @@ public final class OperatorDtos {
     public record OperatorSummaryDto(
             UUID id,
             String nome,
-            String endereco,
             String photoUrl,
             String photoId,
             boolean ativo
@@ -40,7 +36,6 @@ public final class OperatorDtos {
             return new OperatorSummaryDto(
                     o.getId(),
                     o.getNome(),
-                    o.getEndereco(),
                     o.getPhotoKey() == null ? null : storage.urlFor(o.getPhotoKey()),
                     o.getPhotoKey() == null ? null : UUID.nameUUIDFromBytes(o.getPhotoKey().getBytes()).toString(),
                     o.isAtivo()
@@ -53,7 +48,6 @@ public final class OperatorDtos {
     public record OperatorDetailDto(
             UUID id,
             String nome,
-            String endereco,
             String photoUrl,
             String photoId,
             boolean ativo,

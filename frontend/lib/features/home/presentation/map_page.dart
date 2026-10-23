@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/events.dart';
+import '../../../core/maps/map_config.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/session/session.dart';
 import '../../../core/ui/widgets.dart';
@@ -33,6 +34,7 @@ class _MapPageState extends State<MapPage> {
   String? _country;
   String _query = '';
   String? _selectedSiteId;
+  MapLayerStyle _style = MapLayerStyle.streets;
   LatLng? _myPosition;
 
   @override
@@ -454,11 +456,7 @@ class _MapPageState extends State<MapPage> {
               onTap: (_, __) => _searchFocus.unfocus(),
             ),
             children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'log.dive.diver',
-                maxZoom: 19,
-              ),
+              MapConfig.tileLayer(_style),
               MarkerLayer(markers: visible.map(_marker).toList()),
               if (_myPosition != null)
                 MarkerLayer(markers: [
@@ -479,6 +477,21 @@ class _MapPageState extends State<MapPage> {
             ],
           ),
         ),
+
+        // alternar entre mapa / satélite / híbrido (só com a chave do MapTiler)
+        if (MapConfig.hasMaptiler)
+          Positioned(
+            right: 16,
+            top: 150,
+            child: FloatingActionButton.small(
+              heroTag: 'layers',
+              tooltip: 'Camada: ${MapConfig.label(_style)}',
+              onPressed: () => setState(() => _style = MapConfig.next(_style)),
+              backgroundColor: Colors.white,
+              foregroundColor: DiverrTheme.primary,
+              child: const Icon(Icons.layers_outlined),
+            ),
+          ),
 
         // topo: busca + países
         Positioned(
@@ -524,6 +537,13 @@ class _MapPageState extends State<MapPage> {
               message: 'Os pontos de mergulho cadastrados pela equipe aparecerão aqui.',
             ),
           ),
+
+        // atribuição obrigatória do mapa
+        Positioned(
+          left: 8,
+          bottom: _country != null && visible.isNotEmpty ? 158 : 6,
+          child: MapConfig.attribution(),
+        ),
 
         // base: botão localizar + carrossel do país
         Positioned(
