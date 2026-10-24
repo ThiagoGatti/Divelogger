@@ -30,8 +30,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
   static const _visibilityHelp = {
     'PRIVATE': 'Ninguém além de você vê seus mergulhos.',
-    'FRIENDS': 'Só quem você segue e que também te segue de volta (amigos).',
-    'FOLLOWERS': 'Qualquer pessoa que te segue vê seus mergulhos, como no Letterboxd. (padrão)',
+    'FRIENDS': 'Só quem você segue e que também te segue de volta.',
+    'FOLLOWERS': 'Qualquer pessoa que te segue vê seus mergulhos.',
     'PUBLIC': 'Qualquer usuário do Diverr pode ver seus mergulhos.',
   };
 

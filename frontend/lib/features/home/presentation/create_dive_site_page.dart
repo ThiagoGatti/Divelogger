@@ -46,7 +46,6 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
     ('certificacaoMinima', 'Certificação mínima', 'Ex.: Open Water', 1),
     ('faunaFlora', 'Fauna e flora', 'O que normalmente se vê no local', 3),
     ('comoChegar', 'Como chegar', 'Acesso, barco, trilha, estacionamento...', 3),
-    ('infraestrutura', 'Infraestrutura', 'Operadoras, banheiros, aluguel de equipamento...', 3),
     ('dicas', 'Dicas do local', 'Dicas para quem vai mergulhar aqui', 3),
     ('avisosSeguranca', 'Avisos de segurança', 'Perigos e cuidados importantes', 3),
   ];
