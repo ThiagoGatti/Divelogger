@@ -28,6 +28,8 @@ public final class ReviewDtos {
             Long userId,
             String autor,
             String username,
+            String photoUrl,
+            String photoId,
             double rating,
             String texto,
             LocalDateTime createdAt,

@@ -67,6 +67,8 @@ public class ProfileService {
                 u.getNomeCompleto(),
                 u.getUsername(),
                 u.getBio(),
+                com.log.diverr.diver.storage.PhotoUrls.url(u),
+                com.log.diverr.diver.storage.PhotoUrls.id(u),
                 self,
                 follows.countByFolloweeId(userId),
                 follows.countByFollowerId(userId),

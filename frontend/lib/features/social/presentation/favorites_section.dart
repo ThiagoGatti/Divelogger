@@ -201,7 +201,7 @@ class _FavoritesSectionState extends State<FavoritesSection> {
                     )
                   : Container(
                       decoration: BoxDecoration(
-                        color: widget.editable ? DiverrTheme.background : Colors.white,
+                        color: widget.editable ? context.softFill : context.surfaceColor,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: DiverrTheme.primary.withOpacity(widget.editable ? .35 : .12),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../app/theme.dart';
 import '../data/auth_api.dart';
+import 'forgot_password_page.dart';
+import 'google_sign_in_button.dart';
 import 'register_page.dart';
 import '../../home/presentation/home_page.dart';
 
@@ -49,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Center(child: Icon(Icons.scuba_diving, size: 76, color: DiverrTheme.primary)),
             const SizedBox(height: 28),
-            Text('Bem-vindo de volta!', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800, color: DiverrTheme.dark)),
+            Text('Bem-vindo de volta!', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text('Entre para acessar seus mergulhos e explorar novos lugares.', style: TextStyle(color: Colors.grey.shade600, height: 1.4)),
             const SizedBox(height: 28),
@@ -67,8 +69,10 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 26),
             SizedBox(width: double.infinity, height: 54, child: ElevatedButton(onPressed: _loading ? null : _login, child: _loading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Entrar'))),
+            const SizedBox(height: 18),
+            const GoogleSignInButton(),
             const SizedBox(height: 12),
-            Center(child: TextButton(onPressed: () {}, child: const Text('Esqueci minha senha'))),
+            Center(child: TextButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ForgotPasswordPage(initialEmail: _email.text.trim()))), child: const Text('Esqueci minha senha'))),
             const Divider(height: 32),
             Center(child: TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage())), child: const Text('Ainda não tenho uma conta'))),
           ]),

@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../app/theme.dart';
 import '../../../core/format.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../../core/images/image_service.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/theme_controller.dart';
 import '../../../core/session/session.dart';
 import '../../../core/ui/widgets.dart';
 import '../../admin/presentation/admin_users_page.dart';
@@ -10,6 +14,8 @@ import '../../operators/presentation/operators_page.dart';
 import '../../auth/data/me_api.dart';
 import '../../auth/data/user_model.dart';
 import '../../landing/presentation/landing_page.dart';
+import '../../legal/legal_page.dart';
+import '../../social/presentation/social_widgets.dart';
 
 /// Perfil, privacidade, plano e conta.
 class SettingsPage extends StatefulWidget {
@@ -27,11 +33,12 @@ class _SettingsPageState extends State<SettingsPage> {
       TextEditingController(text: AppSession.instance.currentUser?.bio ?? '');
   late String _visibility = AppSession.instance.currentUser?.diveVisibility ?? 'FOLLOWERS';
   bool _saving = false;
+  bool _photoBusy = false;
 
   static const _visibilityHelp = {
     'PRIVATE': 'Ninguém além de você vê seus mergulhos.',
-    'FRIENDS': 'Só quem você segue e que também te segue de volta.',
-    'FOLLOWERS': 'Qualquer pessoa que te segue vê seus mergulhos.',
+    'FRIENDS': 'Só quem você segue e que também te segue de volta (amigos).',
+    'FOLLOWERS': 'Qualquer pessoa que te segue vê seus mergulhos, como no Letterboxd. (padrão)',
     'PUBLIC': 'Qualquer usuário do Diverr pode ver seus mergulhos.',
   };
 
@@ -66,6 +73,65 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  Future<void> _changePhoto() async {
+    final hasPhoto = AppSession.instance.currentUser?.photoUrl != null;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Tirar foto'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Escolher da galeria'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            if (hasPhoto)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: DiverrTheme.danger),
+                title: const Text('Remover foto', style: TextStyle(color: DiverrTheme.danger)),
+                onTap: () => Navigator.pop(ctx, 'remove'),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (action == null) return;
+
+    setState(() => _photoBusy = true);
+    try {
+      if (action == 'remove') {
+        await _api.removePhoto();
+      } else {
+        final file = await ImageService().pickAvatar(
+          action == 'camera' ? ImageSource.camera : ImageSource.gallery,
+        );
+        if (file == null) {
+          if (mounted) setState(() => _photoBusy = false);
+          return;
+        }
+        await _api.uploadPhoto(file);
+      }
+      if (!mounted) return;
+      setState(() => _photoBusy = false);
+      showSnack(context, action == 'remove' ? 'Foto removida.' : 'Foto de perfil atualizada!');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _photoBusy = false);
+      showSnack(context, e.message, error: true);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _photoBusy = false);
+      showSnack(context, 'Não foi possível acessar a foto. Verifique as permissões.', error: true);
+    }
+  }
+
   Future<void> _logout() async {
     final ok = await confirmDialog(
       context,
@@ -95,6 +161,39 @@ class _SettingsPageState extends State<SettingsPage> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
         children: [
+          ValueListenableBuilder<int>(
+            valueListenable: AppSession.instance.changed,
+            builder: (context, _, __) {
+              final u = AppSession.instance.currentUser;
+              return Center(
+                child: Column(
+                  children: [
+                    Stack(
+                      alignment: Alignment.bottomRight,
+                      children: [
+                        UserAvatar(
+                          name: u?.nomeCompleto ?? '',
+                          radius: 46,
+                          photoUrl: u?.photoUrl,
+                          photoId: u?.photoId,
+                        ),
+                        if (_photoBusy)
+                          const Positioned.fill(
+                            child: Center(child: CircularProgressIndicator()),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: _photoBusy ? null : _changePhoto,
+                      icon: const Icon(Icons.add_a_photo_outlined, size: 18),
+                      label: Text(u?.photoUrl == null ? 'Adicionar foto de perfil' : 'Alterar foto'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
           const SectionTitle('Perfil'),
           TextField(
             controller: _username,
@@ -126,6 +225,24 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           const SizedBox(height: 12),
           LoadingButton(loading: _saving, onPressed: _save, label: 'Salvar alterações', icon: Icons.check),
+
+          const SectionTitle('Aparência'),
+          ValueListenableBuilder<ThemeMode>(
+            valueListenable: ThemeController.mode,
+            builder: (context, mode, _) => SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<ThemeMode>(
+                showSelectedIcon: false,
+                segments: const [
+                  ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.brightness_auto_outlined), label: Text('Sistema')),
+                  ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode_outlined), label: Text('Claro')),
+                  ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode_outlined), label: Text('Escuro')),
+                ],
+                selected: {mode},
+                onSelectionChanged: (v) => ThemeController.set(v.first),
+              ),
+            ),
+          ),
 
           const SectionTitle('Plano'),
           Card(
@@ -203,6 +320,27 @@ class _SettingsPageState extends State<SettingsPage> {
               style: TextStyle(color: DiverrTheme.muted, fontSize: 12.5),
             ),
           ],
+
+          const SectionTitle('Sobre'),
+          Card(
+            child: Column(
+              children: [
+                ListTile(
+                  onTap: () => Navigator.of(context).push(LegalPage.privacy()),
+                  leading: const Icon(Icons.privacy_tip_outlined, color: DiverrTheme.primary),
+                  title: const Text('Política de Privacidade', style: TextStyle(fontWeight: FontWeight.w700)),
+                  trailing: const Icon(Icons.chevron_right),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  onTap: () => Navigator.of(context).push(LegalPage.terms()),
+                  leading: const Icon(Icons.description_outlined, color: DiverrTheme.primary),
+                  title: const Text('Termos de Uso', style: TextStyle(fontWeight: FontWeight.w700)),
+                  trailing: const Icon(Icons.chevron_right),
+                ),
+              ],
+            ),
+          ),
 
           const SizedBox(height: 22),
           Card(

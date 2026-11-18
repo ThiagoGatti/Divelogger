@@ -192,7 +192,7 @@ class _FeedCardState extends State<_FeedCard> {
           children: [
             ListTile(
               onTap: _openProfile,
-              leading: UserAvatar(name: d.ownerNome),
+              leading: UserAvatar(name: d.ownerNome, photoUrl: d.ownerPhotoUrl, photoId: d.ownerPhotoId),
               title: Text(d.ownerNome, style: const TextStyle(fontWeight: FontWeight.w800)),
               subtitle: Text([
                 if (d.ownerUsername != null) '@${d.ownerUsername}',

@@ -153,6 +153,8 @@ public class DiveSiteReviewService {
                 u.getId(),
                 first,
                 u.getUsername(),
+                com.log.diverr.diver.storage.PhotoUrls.url(u),
+                com.log.diverr.diver.storage.PhotoUrls.id(u),
                 r.getScore() != null ? r.getScore() : r.getRating(),
                 r.getTexto(),
                 r.getCreatedAt(),

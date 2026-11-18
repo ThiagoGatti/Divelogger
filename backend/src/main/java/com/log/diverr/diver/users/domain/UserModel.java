@@ -61,6 +61,17 @@ public class UserModel {
         @Column(length = 300)
         private String bio;
 
+        /** Identificador da conta Google (claim "sub"), quando o usuário entrou/vinculou com o Google. */
+        @Column(unique = true, length = 64)
+        private String googleSub;
+
+        /** Chave da foto de perfil no S3. */
+        @Column(length = 300)
+        private String profilePhotoKey;
+
+        /** Tentativas erradas do código de recuperação de senha (zera a cada novo código). */
+        private Integer resetAttempts;
+
         /** Quem pode ver os mergulhos. Linhas antigas (null) valem FOLLOWERS. */
         @Enumerated(EnumType.STRING)
         @Column(length = 20)

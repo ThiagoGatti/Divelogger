@@ -174,7 +174,9 @@ public class DiveLogSocialService {
             String first = u.getNomeCompleto() == null ? "Mergulhador" : u.getNomeCompleto().trim().split("\\s+")[0];
             boolean mine = u.getId().equals(viewerId);
             return new CommentDto(
-                    c.getId(), u.getId(), first, u.getUsername(), c.getTexto(), c.getCreatedAt(),
+                    c.getId(), u.getId(), first, u.getUsername(),
+                    com.log.diverr.diver.storage.PhotoUrls.url(u), com.log.diverr.diver.storage.PhotoUrls.id(u),
+                    c.getTexto(), c.getCreatedAt(),
                     mine, mine || owner || isAdmin);
         }).toList();
     }

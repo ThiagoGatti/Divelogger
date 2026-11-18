@@ -8,7 +8,9 @@ class LandingPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return Theme(
+      data: DiverrTheme.light,
+      child: Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -33,7 +35,7 @@ class LandingPage extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildHeader() {

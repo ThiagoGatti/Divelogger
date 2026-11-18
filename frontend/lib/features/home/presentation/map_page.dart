@@ -322,7 +322,7 @@ class _MapPageState extends State<MapPage> {
           Container(
             margin: const EdgeInsets.only(top: 8),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.surfaceColor,
               borderRadius: BorderRadius.circular(DiverrTheme.radiusSmall + 2),
               boxShadow: DiverrTheme.softShadow,
             ),
@@ -416,7 +416,7 @@ class _MapPageState extends State<MapPage> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      color: s.id == _selectedSiteId ? DiverrTheme.primary : DiverrTheme.dark,
+                      color: s.id == _selectedSiteId ? DiverrTheme.primary : context.strongText,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -487,7 +487,7 @@ class _MapPageState extends State<MapPage> {
               heroTag: 'layers',
               tooltip: 'Camada: ${MapConfig.label(_style)}',
               onPressed: () => setState(() => _style = MapConfig.next(_style)),
-              backgroundColor: Colors.white,
+              backgroundColor: context.surfaceColor,
               foregroundColor: DiverrTheme.primary,
               child: const Icon(Icons.layers_outlined),
             ),
@@ -558,7 +558,7 @@ class _MapPageState extends State<MapPage> {
                 child: FloatingActionButton.small(
                   heroTag: 'locate',
                   onPressed: _locate,
-                  backgroundColor: Colors.white,
+                  backgroundColor: context.surfaceColor,
                   foregroundColor: DiverrTheme.primary,
                   child: const Icon(Icons.my_location),
                 ),

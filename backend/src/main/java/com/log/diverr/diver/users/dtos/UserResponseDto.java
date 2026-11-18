@@ -18,7 +18,9 @@ public record UserResponseDto(
         LocalDate planExpiresAt,
         String username,
         String bio,
-        DiveVisibility diveVisibility
+        DiveVisibility diveVisibility,
+        String photoUrl,
+        String photoId
 ) {
     public static UserResponseDto from(UserModel user) {
         return new UserResponseDto(
@@ -33,7 +35,9 @@ public record UserResponseDto(
                 user.getPlanExpiresAt(),
                 user.getUsername(),
                 user.getBio(),
-                user.getDiveVisibility()
+                user.getDiveVisibility(),
+                com.log.diverr.diver.storage.PhotoUrls.url(user),
+                com.log.diverr.diver.storage.PhotoUrls.id(user)
         );
     }
 }

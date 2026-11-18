@@ -8,14 +8,29 @@ import '../../../core/ui/widgets.dart';
 import '../data/social_api.dart';
 import '../data/social_models.dart';
 
-/// Círculo com as iniciais (ainda não há foto de perfil).
+/// Foto de perfil (quando existe) ou círculo com as iniciais.
 class UserAvatar extends StatelessWidget {
   final String name;
   final double radius;
-  const UserAvatar({super.key, required this.name, this.radius = 20});
+  final String? photoUrl;
+  final String? photoId;
+  const UserAvatar({super.key, required this.name, this.radius = 20, this.photoUrl, this.photoId});
 
   @override
   Widget build(BuildContext context) {
+    if (photoUrl != null) {
+      return ClipOval(
+        child: SizedBox(
+          width: radius * 2,
+          height: radius * 2,
+          child: RemoteImage(
+            url: photoUrl,
+            cacheKey: photoId,
+            placeholderIcon: Icons.person,
+          ),
+        ),
+      );
+    }
     return CircleAvatar(
       radius: radius,
       backgroundColor: DiverrTheme.ocean.withOpacity(.4),
@@ -44,7 +59,7 @@ class UserTile extends StatelessWidget {
       child: ListTile(
         onTap: onTap,
         contentPadding: const EdgeInsets.fromLTRB(14, 6, 10, 6),
-        leading: UserAvatar(name: user.nome),
+        leading: UserAvatar(name: user.nome, photoUrl: user.photoUrl, photoId: user.photoId),
         title: Text(user.nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: Wrap(
           spacing: 6,
@@ -199,7 +214,7 @@ class _ReactionBarState extends State<ReactionBar> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: selected ? DiverrTheme.primary.withOpacity(.12) : Colors.white,
+                  color: selected ? DiverrTheme.primary.withOpacity(.12) : context.surfaceColor,
                   borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: selected ? DiverrTheme.primary : DiverrTheme.dark.withOpacity(.10),
@@ -347,7 +362,7 @@ class _DiveLogSocialSectionState extends State<DiveLogSocialSection> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    UserAvatar(name: c.autor, radius: 17),
+                    UserAvatar(name: c.autor, radius: 17, photoUrl: c.photoUrl, photoId: c.photoId),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(

@@ -188,6 +188,48 @@ O app funciona sem internet para o que importa no barco ou em locais remotos:
 Limites atuais: reações, comentários, feed, listas, avaliações e o mapa (as imagens do mapa) exigem internet; fotos já
 vistas ou salvas offline continuam aparecendo.
 
+## Esqueci minha senha (e-mail)
+
+O app pede o e-mail e o backend envia um **código de 6 dígitos** (vale 15 min, 5 tentativas, 1 envio por minuto). O e-mail
+sai por SMTP. Variáveis no Elastic Beanstalk (exemplo com Amazon SES, região São Paulo):
+
+| Variável | Valor |
+|---|---|
+| `SPRING_MAIL_HOST` | `email-smtp.sa-east-1.amazonaws.com` |
+| `SPRING_MAIL_PORT` | `587` |
+| `SPRING_MAIL_USERNAME` / `SPRING_MAIL_PASSWORD` | credenciais **SMTP** geradas no SES (não são as do IAM comum) |
+| `MAIL_FROM` | remetente verificado no SES, ex.: `nao-responder@seudominio.com` |
+
+No SES novo (*sandbox*) só se envia para e-mails verificados; peça acesso de produção antes de lançar.
+Sem essas variáveis nenhum e-mail é enviado (para testar localmente use `DEV_LOG_RESET_CODES=true` e leia o código no log).
+
+## Login com Google
+
+1. Google Cloud Console, *APIs e serviços, Tela de permissão OAuth*: preencha nome do app, e-mail de suporte e o link da
+   Política de Privacidade.
+2. *Credenciais, Criar credenciais, ID do cliente OAuth*:
+   - **Aplicativo da Web**: o *Client ID* dele é o "server client ID". Coloque em `GOOGLE_SERVER_CLIENT_ID` (arquivos
+     `frontend/env/*.json`) **e** na variável `GOOGLE_CLIENT_IDS` do backend (Beanstalk).
+   - **Android**: pacote `log.dive.diver` + **SHA-1** de cada chave de assinatura (a de debug para testes, a de release e,
+     depois, a da *Assinatura de apps do Google Play*). Sem isto o login falha no aparelho (erro 10).
+   - **iOS** (quando for publicar na App Store): ID do cliente iOS e o esquema de URL no `Info.plist`.
+3. Sem `GOOGLE_SERVER_CLIENT_ID` o botão "Continuar com o Google" não aparece.
+
+O servidor valida o ID token (assinatura, validade, emissor e cliente) e vincula a conta pelo e-mail verificado. Conta nova
+exige aceitar Termos e Política. **Atenção (App Store):** apps com login do Google devem oferecer também *Sign in with Apple*
+(ou equivalente); confira a diretriz 4.8 antes de publicar no iOS.
+
+## Política de Privacidade e Termos
+
+Textos-modelo em `frontend/lib/features/legal/` (telas do app, em Configurações e no cadastro) e nas páginas públicas
+`/privacidade.html` e `/termos.html` do backend (as lojas exigem uma URL pública em HTTPS). **Revise com um advogado e
+preencha os campos entre colchetes** (empresa, CNPJ, e-mail, foro, prazos) nos dois lugares.
+
+## Modo noturno e foto de perfil
+
+Configurações, Aparência: Sistema, Claro ou Escuro (guardado no aparelho). A foto de perfil (câmera ou galeria) é enviada
+direto ao S3 (`users/<id>/avatar/`) e aparece no perfil, feed, comentários, avaliações e listas de pessoas.
+
 ## Mapa (MapTiler) e coordenadas dos locais
 
 O mapa usa o **MapTiler** (satélite, híbrido e mapa de ruas). A chave entra na hora de gerar o app, nos arquivos

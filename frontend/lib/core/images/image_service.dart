@@ -22,6 +22,16 @@ class ImageService {
     );
   }
 
+  /// Foto de perfil: menor (800 px) para carregar rápido.
+  Future<XFile?> pickAvatar(ImageSource source) {
+    return _picker.pickImage(
+      source: source,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+  }
+
   Future<List<XFile>> pickMany() {
     return _picker.pickMultiImage(
       maxWidth: 1920,

@@ -112,7 +112,7 @@ class _PublicProfilePageState extends State<PublicProfilePage> {
         children: [
           Row(
             children: [
-              UserAvatar(name: p.nomeCompleto, radius: 32),
+              UserAvatar(name: p.nomeCompleto, radius: 32, photoUrl: p.photoUrl, photoId: p.photoId),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(

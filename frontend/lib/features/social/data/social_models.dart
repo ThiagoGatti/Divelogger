@@ -7,6 +7,8 @@ class UserSummary {
   final int id;
   final String nome;
   final String? username;
+  final String? photoUrl;
+  final String? photoId;
   final bool iFollow;
   final bool followsMe;
   final bool friends;
@@ -15,6 +17,8 @@ class UserSummary {
     required this.id,
     required this.nome,
     this.username,
+    this.photoUrl,
+    this.photoId,
     required this.iFollow,
     required this.followsMe,
     required this.friends,
@@ -24,6 +28,8 @@ class UserSummary {
         id: (j['id'] as num).toInt(),
         nome: j['nome']?.toString() ?? '',
         username: j['username'] as String?,
+        photoUrl: j['photoUrl'] as String?,
+        photoId: j['photoId']?.toString(),
         iFollow: j['iFollow'] as bool? ?? false,
         followsMe: j['followsMe'] as bool? ?? false,
         friends: j['friends'] as bool? ?? false,
@@ -35,6 +41,8 @@ class PublicProfile {
   final String nomeCompleto;
   final String? username;
   final String? bio;
+  final String? photoUrl;
+  final String? photoId;
   final bool self;
   final int followers;
   final int following;
@@ -52,6 +60,8 @@ class PublicProfile {
     required this.nomeCompleto,
     this.username,
     this.bio,
+    this.photoUrl,
+    this.photoId,
     required this.self,
     required this.followers,
     required this.following,
@@ -70,6 +80,8 @@ class PublicProfile {
         nomeCompleto: j['nomeCompleto']?.toString() ?? '',
         username: j['username'] as String?,
         bio: j['bio'] as String?,
+        photoUrl: j['photoUrl'] as String?,
+        photoId: j['photoId']?.toString(),
         self: j['self'] as bool? ?? false,
         followers: (j['followers'] as num?)?.toInt() ?? 0,
         following: (j['following'] as num?)?.toInt() ?? 0,
@@ -116,6 +128,8 @@ class CommentModel {
   final int userId;
   final String autor;
   final String? username;
+  final String? photoUrl;
+  final String? photoId;
   final String texto;
   final DateTime createdAt;
   final bool mine;
@@ -126,6 +140,8 @@ class CommentModel {
     required this.userId,
     required this.autor,
     this.username,
+    this.photoUrl,
+    this.photoId,
     required this.texto,
     required this.createdAt,
     required this.mine,
@@ -137,6 +153,8 @@ class CommentModel {
         userId: (j['userId'] as num?)?.toInt() ?? 0,
         autor: j['autor']?.toString() ?? 'Mergulhador',
         username: j['username'] as String?,
+        photoUrl: j['photoUrl'] as String?,
+        photoId: j['photoId']?.toString(),
         texto: j['texto']?.toString() ?? '',
         createdAt: DateTime.tryParse(j['createdAt']?.toString() ?? '') ?? DateTime.now(),
         mine: j['mine'] as bool? ?? false,

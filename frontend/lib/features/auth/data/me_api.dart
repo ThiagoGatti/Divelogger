@@ -1,3 +1,6 @@
+import 'package:image_picker/image_picker.dart';
+
+import '../../../core/images/image_service.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/session/session.dart';
 import 'entitlements.dart';
@@ -27,6 +30,28 @@ class MeApi {
     if (diveVisibility != null) body['diveVisibility'] = diveVisibility;
 
     final json = await _api.patch('/api/me/profile', body);
+    final user = UserModel.fromJson(Map<String, dynamic>.from(json['user'] as Map));
+    final ent = Entitlements.fromJson(Map<String, dynamic>.from(json['entitlements'] as Map));
+    await AppSession.instance.updateFromMe(user, ent);
+  }
+
+  /// Envia a foto de perfil (direto ao S3) e atualiza a sessão.
+  Future<void> uploadPhoto(XFile file) async {
+    final json = await ImageService(api: _api).upload(
+      '',
+      file,
+      presignPath: '/api/me/photo/presign',
+      registerPath: '/api/me/photo',
+    );
+    await _applyMe(json);
+  }
+
+  Future<void> removePhoto() async {
+    final json = await _api.deleteJson('/api/me/photo');
+    await _applyMe(json);
+  }
+
+  Future<void> _applyMe(Map<String, dynamic> json) async {
     final user = UserModel.fromJson(Map<String, dynamic>.from(json['user'] as Map));
     final ent = Entitlements.fromJson(Map<String, dynamic>.from(json['entitlements'] as Map));
     await AppSession.instance.updateFromMe(user, ent);

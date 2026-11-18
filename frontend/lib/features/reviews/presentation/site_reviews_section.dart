@@ -5,6 +5,7 @@ import '../../../core/format.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/session/session.dart';
 import '../../../core/ui/widgets.dart';
+import '../../social/presentation/social_widgets.dart';
 import '../data/review_models.dart';
 import '../data/reviews_api.dart';
 
@@ -107,7 +108,7 @@ class _SiteReviewsSectionState extends State<SiteReviewsSection> {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: context.surfaceColor,
             borderRadius: BorderRadius.circular(DiverrTheme.radius),
             boxShadow: DiverrTheme.softShadow,
           ),
@@ -159,11 +160,7 @@ class _SiteReviewsSectionState extends State<SiteReviewsSection> {
                     children: [
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: DiverrTheme.ocean.withOpacity(.35),
-                            child: Text(initialsOf(r.autor), style: const TextStyle(fontWeight: FontWeight.w900, color: DiverrTheme.primary, fontSize: 13)),
-                          ),
+                          UserAvatar(name: r.autor, radius: 18, photoUrl: r.photoUrl, photoId: r.photoId),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(

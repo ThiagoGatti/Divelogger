@@ -246,7 +246,7 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(DiverrTheme.radiusSmall),
         border: Border.all(color: DiverrTheme.dark.withOpacity(.06)),
       ),
@@ -305,7 +305,7 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => PublicProfilePage(userId: l.ownerId)),
         ),
-        leading: UserAvatar(name: l.ownerNome),
+        leading: UserAvatar(name: l.ownerNome, photoUrl: l.ownerPhotoUrl, photoId: l.ownerPhotoId),
         title: Text(l.ownerNome, style: const TextStyle(fontWeight: FontWeight.w800)),
         subtitle: l.ownerUsername == null ? null : Text('@${l.ownerUsername}'),
         trailing: const Icon(Icons.chevron_right),
@@ -344,7 +344,7 @@ class _DiveLogDetailsPageState extends State<DiveLogDetailsPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(DiverrTheme.radius),
         boxShadow: DiverrTheme.softShadow,
       ),

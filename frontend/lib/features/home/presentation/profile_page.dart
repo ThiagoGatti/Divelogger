@@ -11,6 +11,7 @@ import '../../social/data/social_api.dart';
 import '../../social/data/social_models.dart';
 import '../../social/presentation/favorites_section.dart';
 import '../../social/presentation/follow_list_page.dart';
+import '../../social/presentation/social_widgets.dart';
 import '../../social/presentation/user_search_page.dart';
 import '../../dive_logs/data/dive_log_model.dart';
 import '../../dive_logs/data/dive_logs_repository.dart';
@@ -144,15 +145,11 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 58,
-                      height: 58,
-                      alignment: Alignment.center,
-                      decoration: const BoxDecoration(color: Colors.white24, shape: BoxShape.circle),
-                      child: Text(
-                        initialsOf(user?.nomeCompleto ?? ''),
-                        style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900, color: Colors.white),
-                      ),
+                    UserAvatar(
+                      name: user?.nomeCompleto ?? '',
+                      radius: 29,
+                      photoUrl: user?.photoUrl,
+                      photoId: user?.photoId,
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -339,7 +336,7 @@ class _TabsDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Container(color: DiverrTheme.background, child: tabBar);
+    return Container(color: context.softFill, child: tabBar);
   }
 
   @override

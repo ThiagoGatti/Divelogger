@@ -3,6 +3,8 @@ class ReviewModel {
   final int userId;
   final String autor;
   final String? username;
+  final String? photoUrl;
+  final String? photoId;
   final double rating;
   final String? texto;
   final DateTime createdAt;
@@ -13,6 +15,8 @@ class ReviewModel {
     required this.userId,
     required this.autor,
     this.username,
+    this.photoUrl,
+    this.photoId,
     required this.rating,
     this.texto,
     required this.createdAt,
@@ -24,6 +28,8 @@ class ReviewModel {
         userId: (j['userId'] as num?)?.toInt() ?? 0,
         autor: j['autor']?.toString() ?? 'Mergulhador',
         username: j['username'] as String?,
+        photoUrl: j['photoUrl'] as String?,
+        photoId: j['photoId']?.toString(),
         rating: (j['rating'] as num?)?.toDouble() ?? 0,
         texto: j['texto'] as String?,
         createdAt: DateTime.tryParse(j['createdAt']?.toString() ?? '') ?? DateTime.now(),

@@ -59,4 +59,46 @@ class AuthApi {
     );
     return login(email, senha);
   }
+
+  /// Pede o código de recuperação por e-mail. A resposta é sempre a mesma (não revela se o e-mail existe).
+  Future<void> forgotPassword(String email) async {
+    await _api.post('/api/auth/forgot-password', {'email': email.trim()}, auth: false);
+  }
+
+  Future<void> resetPassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await _api.post(
+      '/api/auth/reset-password',
+      {'email': email.trim(), 'code': code.trim(), 'newPassword': newPassword},
+      auth: false,
+    );
+  }
+
+  /// Login com Google: o servidor valida o ID token. Contas novas exigem [acceptedTerms].
+  Future<UserModel> loginWithGoogle(String idToken, {bool acceptedTerms = false}) async {
+    final json = await _api.post(
+      '/api/auth/google',
+      {'idToken': idToken, 'acceptedTerms': acceptedTerms},
+      auth: false,
+    );
+
+    final token = json['accessToken'] as String?;
+    final userJson = json['user'];
+    if (token == null || userJson is! Map) {
+      throw ApiException('Resposta de login inválida.');
+    }
+
+    final user = UserModel.fromJson(Map<String, dynamic>.from(userJson));
+    await AppSession.instance.signIn(
+      token: token,
+      expiresInSeconds: (json['expiresIn'] as num?)?.toInt() ?? 3600,
+      user: user,
+    );
+    await MeApi(api: _api).refresh();
+    SyncService.instance.scheduleSync();
+    return AppSession.instance.currentUser ?? user;
+  }
 }

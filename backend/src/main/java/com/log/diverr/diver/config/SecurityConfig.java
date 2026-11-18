@@ -66,7 +66,17 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/users",
-                                "/api/auth/login"
+                                "/api/auth/login",
+                                "/api/auth/forgot-password",
+                                "/api/auth/reset-password",
+                                "/api/auth/google"
+                        ).permitAll()
+
+                        // páginas públicas exigidas pelas lojas (Política de Privacidade e Termos)
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/privacidade.html",
+                                "/termos.html"
                         ).permitAll()
 
                         .requestMatchers(

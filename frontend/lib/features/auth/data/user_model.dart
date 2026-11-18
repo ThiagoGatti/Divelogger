@@ -18,7 +18,9 @@ class UserModel {
   final String? planExpiresAt;
   final String? username;
   final String? bio;
-  final String diveVisibility; // PRIVATE | FOLLOWERS | PUBLIC
+  final String diveVisibility; // PRIVATE | FRIENDS | FOLLOWERS | PUBLIC
+  final String? photoUrl;
+  final String? photoId;
 
   const UserModel({
     required this.id,
@@ -33,6 +35,8 @@ class UserModel {
     this.username,
     this.bio,
     this.diveVisibility = 'FOLLOWERS',
+    this.photoUrl,
+    this.photoId,
   });
 
   bool get isAdmin => role == 'ADMIN';
@@ -50,6 +54,8 @@ class UserModel {
         username: json['username'] as String?,
         bio: json['bio'] as String?,
         diveVisibility: json['diveVisibility'] as String? ?? 'FOLLOWERS',
+        photoUrl: json['photoUrl'] as String?,
+        photoId: json['photoId']?.toString(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -65,5 +71,7 @@ class UserModel {
         'username': username,
         'bio': bio,
         'diveVisibility': diveVisibility,
+        'photoUrl': photoUrl,
+        'photoId': photoId,
       };
 }

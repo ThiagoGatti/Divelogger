@@ -53,6 +53,8 @@ class DiveLogModel {
   final int ownerId;
   final String ownerNome;
   final String? ownerUsername;
+  final String? ownerPhotoUrl;
+  final String? ownerPhotoId;
   final String? observacoes;
   final List<ImageRef> imagens;
 
@@ -87,6 +89,8 @@ class DiveLogModel {
     this.ownerId = 0,
     this.ownerNome = '',
     this.ownerUsername,
+    this.ownerPhotoUrl,
+    this.ownerPhotoId,
     this.observacoes,
     this.imagens = const [],
     this.pending = false,
@@ -171,6 +175,8 @@ class DiveLogModel {
       ownerId: i(json['userId']) ?? 0,
       ownerNome: json['ownerNome']?.toString() ?? '',
       ownerUsername: json['ownerUsername']?.toString(),
+      ownerPhotoUrl: json['ownerPhotoUrl']?.toString(),
+      ownerPhotoId: json['ownerPhotoId']?.toString(),
       observacoes: json['observacoes']?.toString(),
       imagens: ImageRef.listFrom(json['imagens']),
     );

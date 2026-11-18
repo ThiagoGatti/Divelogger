@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/session/session.dart';
 import '../features/home/presentation/home_page.dart';
 import '../features/landing/presentation/landing_page.dart';
+import '../core/theme_controller.dart';
 import 'theme.dart';
 
 class DiverrApp extends StatefulWidget {
@@ -37,12 +38,17 @@ class _DiverrAppState extends State<DiverrApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: _navigatorKey,
-      debugShowCheckedModeBanner: false,
-      title: 'Diverr',
-      theme: DiverrTheme.light,
-      home: AppSession.instance.isLoggedIn ? const HomePage() : const LandingPage(),
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeController.mode,
+      builder: (context, mode, _) => MaterialApp(
+        navigatorKey: _navigatorKey,
+        debugShowCheckedModeBanner: false,
+        title: 'Diverr',
+        theme: DiverrTheme.light,
+        darkTheme: DiverrTheme.darkTheme,
+        themeMode: mode,
+        home: AppSession.instance.isLoggedIn ? const HomePage() : const LandingPage(),
+      ),
     );
   }
 }

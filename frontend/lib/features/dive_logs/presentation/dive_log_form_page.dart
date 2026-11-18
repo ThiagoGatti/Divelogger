@@ -410,7 +410,7 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: DiverrTheme.background,
+          color: context.softFill,
           borderRadius: BorderRadius.circular(DiverrTheme.radiusSmall),
         ),
         child: Row(
@@ -612,7 +612,7 @@ class _DiveLogFormPageState extends State<DiveLogFormPage> {
                           width: 92,
                           height: 92,
                           decoration: BoxDecoration(
-                            color: DiverrTheme.background,
+                            color: context.softFill,
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: DiverrTheme.primary.withOpacity(.35)),
                           ),

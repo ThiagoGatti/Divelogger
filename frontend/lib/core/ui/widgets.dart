@@ -16,7 +16,7 @@ void showSnack(BuildContext context, String message, {bool error = false}) {
     ..showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: error ? DiverrTheme.danger : DiverrTheme.dark,
+        backgroundColor: error ? DiverrTheme.danger : (context.isDarkMode ? DiverrTheme.darkSoft : DiverrTheme.dark),
       ),
     );
 }
@@ -96,7 +96,7 @@ Future<void> showUpgradeSheet(BuildContext context, {String? message}) {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: DiverrTheme.background,
+                color: context.softFill,
                 borderRadius: BorderRadius.circular(DiverrTheme.radiusSmall),
               ),
               child: const Row(
@@ -171,7 +171,6 @@ class PageHeader extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
-                    color: DiverrTheme.dark,
                     height: 1.1,
                   ),
                 ),
@@ -203,7 +202,7 @@ class SectionTitle extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: DiverrTheme.dark),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
             ),
           ),
           if (trailing != null) trailing!,
@@ -366,7 +365,7 @@ class StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.surfaceColor,
         borderRadius: BorderRadius.circular(DiverrTheme.radius),
         boxShadow: DiverrTheme.softShadow,
       ),
@@ -380,7 +379,7 @@ class StatCard extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: DiverrTheme.dark),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
             ),
           ),
           const SizedBox(height: 2),

@@ -514,7 +514,7 @@ class _DiveSiteDetailsPageState extends State<DiveSiteDetailsPage> {
         width: double.infinity,
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.surfaceColor,
           borderRadius: BorderRadius.circular(DiverrTheme.radius),
         ),
         child: const Text(
@@ -968,7 +968,7 @@ class _ActionTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           decoration: BoxDecoration(
-            color: active ? activeColor.withOpacity(.10) : Colors.white,
+            color: active ? activeColor.withOpacity(.10) : context.surfaceColor,
             borderRadius: BorderRadius.circular(DiverrTheme.radiusSmall),
             border: Border.all(
               color: active ? activeColor : DiverrTheme.dark.withOpacity(.10),

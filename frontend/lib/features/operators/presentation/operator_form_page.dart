@@ -158,7 +158,7 @@ class _OperatorFormPageState extends State<OperatorFormPage> {
       content = RemoteImage(url: existingUrl, cacheKey: widget.existing?.photoId);
     } else {
       content = Container(
-        color: DiverrTheme.background,
+        color: context.softFill,
         child: const Icon(Icons.storefront_outlined, size: 40, color: DiverrTheme.primary),
       );
     }

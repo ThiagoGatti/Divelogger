@@ -118,6 +118,7 @@ public class FollowService {
             boolean followsMe = viewerFollowers.contains(u.getId());
             out.add(new UserSummaryDto(
                     u.getId(), u.getNomeCompleto(), u.getUsername(),
+                    com.log.diverr.diver.storage.PhotoUrls.url(u), com.log.diverr.diver.storage.PhotoUrls.id(u),
                     iFollow, followsMe, iFollow && followsMe));
         }
         out.sort((a, b) -> String.valueOf(a.nome()).compareToIgnoreCase(String.valueOf(b.nome())));

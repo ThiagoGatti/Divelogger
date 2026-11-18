@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+
+import '../../../app/theme.dart';
+
 import '../data/auth_api.dart';
+import '../../legal/legal_page.dart';
+import 'google_sign_in_button.dart';
 import '../../home/presentation/home_page.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -15,7 +21,12 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _loading = false;
   bool _terms = false;
 
-  @override void dispose() { _name.dispose(); _email.dispose(); _password.dispose(); super.dispose(); }
+  late final TapGestureRecognizer _tapTerms = TapGestureRecognizer()
+    ..onTap = () => Navigator.of(context).push(LegalPage.terms());
+  late final TapGestureRecognizer _tapPrivacy = TapGestureRecognizer()
+    ..onTap = () => Navigator.of(context).push(LegalPage.privacy());
+
+  @override void dispose() { _tapTerms.dispose(); _tapPrivacy.dispose(); _name.dispose(); _email.dispose(); _password.dispose(); super.dispose(); }
 
   Future<void> _register() async {
     if (_name.text.trim().isEmpty || _email.text.trim().isEmpty || _password.text.length < 8 || !_terms) {
@@ -40,9 +51,30 @@ class _RegisterPageState extends State<RegisterPage> {
       _field('Nome completo', _name, Icons.person_outline, 'Seu nome'), const SizedBox(height: 16),
       _field('E-mail', _email, Icons.email_outlined, 'seu@email.com'), const SizedBox(height: 16),
       _field('Senha', _password, Icons.lock_outline, 'Mínimo 8 caracteres', obscure: true), const SizedBox(height: 10),
-      CheckboxListTile(value: _terms, onChanged: (v) => setState(() => _terms = v ?? false), contentPadding: EdgeInsets.zero, controlAffinity: ListTileControlAffinity.leading, title: const Text('Aceito os termos de uso e a política de privacidade.')),
+      CheckboxListTile(value: _terms, onChanged: (v) => setState(() => _terms = v ?? false), contentPadding: EdgeInsets.zero, controlAffinity: ListTileControlAffinity.leading, title: Text.rich(
+        TextSpan(
+          style: Theme.of(context).textTheme.bodyMedium,
+          children: [
+            const TextSpan(text: 'Li e aceito os '),
+            TextSpan(
+              text: 'Termos de Uso',
+              style: const TextStyle(color: DiverrTheme.primary, fontWeight: FontWeight.w800, decoration: TextDecoration.underline),
+              recognizer: _tapTerms,
+            ),
+            const TextSpan(text: ' e a '),
+            TextSpan(
+              text: 'Política de Privacidade',
+              style: const TextStyle(color: DiverrTheme.primary, fontWeight: FontWeight.w800, decoration: TextDecoration.underline),
+              recognizer: _tapPrivacy,
+            ),
+            const TextSpan(text: '.'),
+          ],
+        ),
+      )),
       const SizedBox(height: 18),
       SizedBox(width: double.infinity, height: 54, child: ElevatedButton(onPressed: _loading ? null : _register, child: _loading ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Criar minha conta'))),
+      const SizedBox(height: 18),
+      const GoogleSignInButton(),
     ]))),
   );
 
