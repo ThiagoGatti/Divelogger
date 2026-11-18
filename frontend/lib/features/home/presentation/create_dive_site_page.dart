@@ -80,6 +80,7 @@ class _CreateDiveSitePageState extends State<CreateDiveSitePage> {
     return null;
   }
 
+  
   final List<Map<String, String>> _tipos = const [
     {
       'value': 'COSTEIRO',
